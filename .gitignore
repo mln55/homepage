@@ -36,5 +36,5 @@ out/
 ### VS Code ###
 .vscode/
 
-src/**/*.properties
-src/**/*.yml
+# 배포용 yml
+src/**/application-prod.yml

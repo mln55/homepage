@@ -1,0 +1,373 @@
+package com.personalproject.homepage.jpa;
+
+import static org.assertj.core.api.Assertions.*;
+
+import java.time.LocalDateTime;
+
+import com.personalproject.homepage.entity.Category;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.ActiveProfiles;
+
+/********************************************************************************
+    @DataJpaTest - JPA 관련 components들만 scan
+    @AutoConfigureTestDatabase - embeded db가 아닌 test용 외부 h2 db 사용을 위해 설정
+    @ActiveProfiles - test용 application 설정을 위함. application.yml 설정으로 대체 가능
+********************************************************************************/
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+@ActiveProfiles("test")
+public class CategoryCrudTest {
+
+    private final TestEntityManager tem;
+
+    @Autowired
+    public CategoryCrudTest(TestEntityManager testEntityManager) {
+        this.tem = testEntityManager;
+    }
+
+    /********************************************************************************
+                    Category Entity 클래스에 대한 CRUD 수행을 테스트한다.
+
+    Create
+        {@link Test_Create_Category#Success_TopLevelCategory_Create}
+            - 최상위 카테고리를 추가
+        {@link Test_Create_Category#Success_SubCategory_Create}
+            - 하위 카테고리를 추가
+        {@link Test_Create_Category#Fail_DulpicatedSubCategory_ThrowException}
+            - 중복되는 하위 카테고리를 추가
+
+    Read - SKIP
+        기본키는 AUTO_INCREMENT BIGINT이다.
+        기본키로 검색하는 상황은 없을 것이라 생각하여 스킵한다.
+
+    Update
+        {@link Test_Update_Category#Success_Name_Update}
+            - 카테고리 이름 변경
+        {@link Test_Update_Category#Success_ParentCategory_Update}
+            - 상위 카테고리 변경
+        {@link Test_Update_Category#Success_NameOfCategoryReferencedToOthers_CascadeUpdate}
+            - 참조 되는 카테고리의 이름을 변경한다.
+
+    Delete
+        {@link Test_Delete_Category#Success_TopLevelCategory_Delete}
+            - 최상위 카테고리를 삭제한다.
+        {@link Test_Delete_Category#Success_SubCategory_delete}
+            - 하위 카테고리를 삭제한다.
+        {@link Test_Delete_Category#Success_CategoryReferencedToOthers_CascadeDelete}
+            - 상위 카테고리로 참조되는 카테고리를 삭제한다.
+*********************************************************************************/
+
+    @Nested
+    @DisplayName("Create")
+    class Test_Create_Category {
+        /********************************************************************************
+            ID컬럼의 @GeneratedValue Strategy가 IDENTITY이므로 tem을 flush하지 않는다.
+        *********************************************************************************/
+        @Test
+        @DisplayName("성공: 최상위 카테고리 추가 - 부모 카테고리 없음")
+        void Success_TopLevelCategory_Create() {
+            // given
+            String c = "category";
+            Category category = Category.builder()
+                .name(c)
+                .build();
+
+            // when
+            Category savedCategory = tem.persist(category);
+
+            // then
+            assertThat(savedCategory)
+                .extracting("name", "parentCategory")
+                .containsExactly(c, null);
+            assertThat(savedCategory)
+                .extracting("createAt")
+                .isInstanceOf(LocalDateTime.class);
+        }
+
+        @Test
+        @DisplayName("성공: 하위 카테고리 추가 - 부모 카테고리 있음")
+        void Success_SubCategory_Create() {
+            // given
+            String parent = "parent";
+            Category parentCategory = Category.builder()
+                .name(parent)
+                .build();
+            tem.persist(parentCategory);
+            tem.clear();
+
+            String child = "child";
+            Category childCategory = Category.builder()
+                .name(child)
+                .parentCategory(parentCategory)
+                .build();
+
+            // when
+            Category savedCategory = tem.persist(childCategory);
+
+            // then
+            assertThat(savedCategory)
+                .extracting("name", "parentCategory.name")
+                .containsExactly(child, parent);
+            assertThat(savedCategory)
+                .extracting("createAt")
+                .isInstanceOf(LocalDateTime.class);
+        }
+
+        @Test
+        @DisplayName("실패: 중복된 하위 카테고리 추가")
+        void Fail_DulpicatedSubCategory_ThrowException() {
+            // given
+            String parent = "parent";
+            Category parentCategory = Category.builder()
+                .name(parent)
+                .build();
+            tem.persist(parentCategory);
+
+            String child = "child";
+            Category subCategory = Category.builder()
+                .name(child)
+                .parentCategory(parentCategory)
+                .build();
+            tem.persist(subCategory);
+
+            Category savedParentCategory = tem.find(Category.class, parentCategory.getCategoryIdx());
+            Category duplicatedCategory = Category.builder()
+                .name(child)
+                .parentCategory(savedParentCategory)
+                .build();
+
+            // when
+            Throwable thrown = catchThrowable(() -> tem.persist(duplicatedCategory));
+
+            // then
+            assertThat(thrown)
+                .isInstanceOf(Exception.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Read - SKIP")
+    class Test_Read_Category {
+        /********************************************************************************
+            category, parentCategory가 기본키가 아니다.
+            repository로 find시 category 및 parentCategory(자기 참조 외래키)로 쿼리가 생성 돼,
+            JPA 테스트 시 직접 쿼리를 생성해야 하기에 스킵한다.
+        ********************************************************************************/
+        @Test
+        @Disabled
+        @DisplayName("SKIP")
+        void Test_Read_Skip() { }
+    }
+
+    @Nested
+    @DisplayName("Update")
+    class Test_Update_Category {
+        @Test
+        @DisplayName("성공: 카테고리 명을 변경한다.")
+        void Success_Name_Update() {
+            // given
+            String before = "before";
+            String after = "after";
+            Category category = Category.builder()
+                .name(before)
+                .build();
+            tem.persist(category);
+            tem.clear();
+
+            // when
+            Category targetCategory = tem.find(Category.class, category.getCategoryIdx());
+            targetCategory.setName(after);
+            tem.merge(targetCategory);
+            tem.flush();
+            tem.clear();
+            Category updatedCategory = tem.find(Category.class, category.getCategoryIdx());
+
+            // then
+            assertThat(updatedCategory)
+                .extracting("name")
+                .isEqualTo(after);
+            assertThat(updatedCategory)
+                .extracting("updateAt")
+                .isInstanceOf(LocalDateTime.class);
+        }
+
+        @Test
+        @DisplayName("성공: parentCategory를 변경한다.")
+        void Success_ParentCategory_Update() {
+            // given
+            String parent1 = "parent1";
+            String parent2 = "parent2";
+            String child = "child";
+
+            Category parentCategory1 = Category.builder()
+                .name(parent1)
+                .build();
+            Category parentCategory2 = Category.builder()
+                .name(parent2)
+                .build();
+            tem.persist(parentCategory1);
+            tem.persist(parentCategory2);
+            tem.clear();
+
+            Category childCategory = Category.builder()
+                .name(child)
+                .parentCategory(parentCategory1)
+                .build();
+            tem.persist(childCategory);
+            tem.clear();
+
+            // when
+            Category targetChildCategory = tem.find(Category.class, childCategory.getCategoryIdx());
+            targetChildCategory.setParentCategory(parentCategory2);
+            tem.merge(targetChildCategory);
+            tem.flush();
+            tem.clear();
+            Category updatedCategory = tem.find(Category.class, childCategory.getCategoryIdx());
+
+            // then
+            assertThat(updatedCategory)
+                .extracting("name", "parentCategory.name", "parentCategory.updateAt")
+                .containsExactly(child, parent2, null);
+            assertThat(updatedCategory)
+                .extracting("updateAt")
+                .isInstanceOf(LocalDateTime.class);
+        }
+
+        @Test
+        @DisplayName("성공: - 다른 곳에 참조 되는 카테고리의 이름을 변경한다.")
+        void Success_NameOfCategoryReferencedToOthers_CascadeUpdate() {
+            // given
+            String parentBefore = "parentBefore";
+            String parentAfter = "parentAfter";
+            String child = "child";
+            Category parentCategory = Category.builder()
+                .name(parentBefore)
+                .build();
+            tem.persist(parentCategory);
+            tem.clear();
+
+            Category childCategory = Category.builder()
+                .name(child)
+                .parentCategory(tem.find(Category.class, parentCategory.getCategoryIdx()))
+                .build();
+            tem.persist(childCategory);
+            tem.clear();
+
+            // when
+            Category targetParentCategory = tem.find(Category.class, parentCategory.getCategoryIdx());
+            targetParentCategory.setName(parentAfter);
+            tem.merge(targetParentCategory);
+            tem.flush();
+            tem.clear();
+            Category updatedParent = tem.find(Category.class, parentCategory.getCategoryIdx());
+            Category updatedChild = tem.find(Category.class, childCategory.getCategoryIdx());
+
+            // then
+            assertThat(updatedParent)
+                .extracting("name")
+                .isEqualTo(parentAfter);
+            assertThat(updatedParent)
+                .extracting("updateAt")
+                .isInstanceOf(LocalDateTime.class);
+            assertThat(updatedChild)
+                .extracting("parentCategory.name")
+                .isEqualTo(parentAfter);
+            assertThat(updatedChild)
+                .extracting("updateAt")
+                .isNull();
+        }
+    }
+
+    @Nested
+    @DisplayName("Delete")
+    class Test_Delete_Category {
+        @Test
+        @DisplayName("성공: 최상위 카테고리를 삭제한다.")
+        void Success_TopLevelCategory_Delete() {
+            // given
+            Category category = Category.builder()
+                .name("category")
+                .build();
+            tem.persist(category);
+            tem.clear();
+
+            // when
+            Throwable notThrown = catchThrowable(() -> {
+                tem.remove(tem.find(Category.class, category.getCategoryIdx()));
+                tem.flush();
+                tem.clear();
+            });
+
+            // then
+            assertThat(notThrown)
+                .isNull();
+        }
+
+        @Test
+        @DisplayName("성공: 하위 카테고리를 삭제한다.")
+        void Success_SubCategory_delete() {
+            // given
+            Category parentCategory = Category.builder()
+                .name("parent")
+                .build();
+            tem.persist(parentCategory);
+            tem.clear();
+
+            Category childCategory = Category.builder()
+                .name("child")
+                .parentCategory(tem.find(Category.class, parentCategory.getCategoryIdx()))
+                .build();
+            tem.persist(childCategory);
+            tem.clear();
+
+            // when
+            Throwable notThrown = catchThrowable(() -> {
+                tem.remove(tem.find(Category.class, childCategory.getCategoryIdx()));
+                tem.flush();
+                tem.clear();
+            });
+
+            // then
+            assertThat(notThrown)
+                .isNull();
+        }
+
+        @Test
+        @DisplayName("성공: parentCategory로 참조되는 category를 삭제한다.")
+        void Success_CategoryReferencedToOthers_CascadeDelete() {
+            // given
+            Category parentCategory = Category.builder()
+                .name("parent")
+                .build();
+            tem.persist(parentCategory);
+            tem.clear();
+
+            Category childCategory = Category.builder()
+                .name("child")
+                .parentCategory(tem.find(Category.class, parentCategory.getCategoryIdx()))
+                .build();
+            tem.persist(childCategory);
+            tem.clear();
+
+            // when
+            Throwable notThrown = catchThrowable(() -> {
+                tem.remove(tem.find(Category.class, parentCategory.getCategoryIdx()));
+                tem.flush();
+                tem.clear();
+            });
+
+            // then
+            assertThat(notThrown)
+                .isNull();
+        }
+    }
+}

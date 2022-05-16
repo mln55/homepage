@@ -1,0 +1,22 @@
+# https://docs.spring.io/spring-boot/docs/2.5.1/reference/html/application-properties.html#application-properties
+server:
+  # http encoding
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  profiles:
+    default: dev
+
+  mvc:
+    static-path-pattern: static/**
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+  devtools:
+    livereload:
+      enabled: true

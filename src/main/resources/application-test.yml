@@ -1,0 +1,39 @@
+# for test yaml
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  datasource:
+    hikari:
+      pool-name: HomepageHikariPool
+      # 테스트용 datasource 설정
+      driver-class-name: org.h2.Driver
+      jdbc-url: jdbc:h2:mem:testdb;MODE=MYSQL
+      username: test
+
+  # 서버 시작 시 실행할 sql문
+  sql:
+    init:
+      schema-locations: classpath:sql/schema.sql
+      mode: always # 외부 db접속 시 embeded가 아닌 always로 설정
+      encoding: utf8
+
+  jpa:
+    database: mysql
+    open-in-view: false
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none
+    show-sql: true # 콘솔 쿼리 출력
+    # properties:
+    #     hibernate.format_sql: true
+
+# jpa query placeholder(?) 표시
+# logging:
+#   level:
+#     org:
+#       hibernate:
+#         type:
+#           descriptor:
+#             sql: trace

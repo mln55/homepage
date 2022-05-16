@@ -26,14 +26,14 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: true # 콘솔 쿼리 출력
-    properties:
-        hibernate.format_sql: true
+    # properties:
+    #     hibernate.format_sql: true
 
 # jpa query placeholder(?) 표시
-logging:
-  level:
-    org:
-      hibernate:
-        type:
-          descriptor:
-            sql: trace
+# logging:
+#   level:
+#     org:
+#       hibernate:
+#         type:
+#           descriptor:
+#             sql: trace

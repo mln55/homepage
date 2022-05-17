@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.*;
 import java.time.LocalDateTime;
 
 import com.personalproject.homepage.entity.Category;
+import com.personalproject.homepage.helper.MockEntity;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -77,9 +78,8 @@ public class CategoryCrudTest {
         void Success_TopLevelCategory_Create() {
             // given
             String c = "category";
-            Category category = Category.builder()
-                .name(c)
-                .build();
+            Category category = MockEntity.mock(Category.class);
+            category.updateInfo(c, null);
 
             // when
             Category savedCategory = tem.persist(category);
@@ -98,17 +98,14 @@ public class CategoryCrudTest {
         void Success_SubCategory_Create() {
             // given
             String parent = "parent";
-            Category parentCategory = Category.builder()
-                .name(parent)
-                .build();
+            Category parentCategory = MockEntity.mock(Category.class);
+            parentCategory.updateInfo(parent, null);
             tem.persist(parentCategory);
             tem.clear();
 
             String child = "child";
-            Category childCategory = Category.builder()
-                .name(child)
-                .parentCategory(parentCategory)
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo(child, parentCategory);
 
             // when
             Category savedCategory = tem.persist(childCategory);
@@ -127,23 +124,18 @@ public class CategoryCrudTest {
         void Fail_DulpicatedSubCategory_ThrowException() {
             // given
             String parent = "parent";
-            Category parentCategory = Category.builder()
-                .name(parent)
-                .build();
+            Category parentCategory = MockEntity.mock(Category.class);
+            parentCategory.updateInfo(parent, null);
             tem.persist(parentCategory);
 
             String child = "child";
-            Category subCategory = Category.builder()
-                .name(child)
-                .parentCategory(parentCategory)
-                .build();
+            Category subCategory = MockEntity.mock(Category.class);
+            subCategory.updateInfo(child, parentCategory);
             tem.persist(subCategory);
 
-            Category savedParentCategory = tem.find(Category.class, parentCategory.getCategoryIdx());
-            Category duplicatedCategory = Category.builder()
-                .name(child)
-                .parentCategory(savedParentCategory)
-                .build();
+            Category savedParentCategory = tem.find(Category.class, parentCategory.getIdx());
+            Category duplicatedCategory = MockEntity.mock(Category.class);
+            duplicatedCategory.updateInfo(child, savedParentCategory);
 
             // when
             Throwable thrown = catchThrowable(() -> tem.persist(duplicatedCategory));
@@ -177,19 +169,18 @@ public class CategoryCrudTest {
             // given
             String before = "before";
             String after = "after";
-            Category category = Category.builder()
-                .name(before)
-                .build();
+            Category category = MockEntity.mock(Category.class);
+            category.updateInfo(before, null);
             tem.persist(category);
             tem.clear();
 
             // when
-            Category targetCategory = tem.find(Category.class, category.getCategoryIdx());
-            targetCategory.setName(after);
+            Category targetCategory = tem.find(Category.class, category.getIdx());
+            targetCategory.updateInfo(after, null);
             tem.merge(targetCategory);
             tem.flush();
             tem.clear();
-            Category updatedCategory = tem.find(Category.class, category.getCategoryIdx());
+            Category updatedCategory = tem.find(Category.class, category.getIdx());
 
             // then
             assertThat(updatedCategory)
@@ -208,30 +199,26 @@ public class CategoryCrudTest {
             String parent2 = "parent2";
             String child = "child";
 
-            Category parentCategory1 = Category.builder()
-                .name(parent1)
-                .build();
-            Category parentCategory2 = Category.builder()
-                .name(parent2)
-                .build();
+            Category parentCategory1 = MockEntity.mock(Category.class);
+            parentCategory1.updateInfo(parent1, null);
+            Category parentCategory2 = MockEntity.mock(Category.class);
+            parentCategory2.updateInfo(parent2, null);
             tem.persist(parentCategory1);
             tem.persist(parentCategory2);
             tem.clear();
 
-            Category childCategory = Category.builder()
-                .name(child)
-                .parentCategory(parentCategory1)
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo(child, parentCategory1);
             tem.persist(childCategory);
             tem.clear();
 
             // when
-            Category targetChildCategory = tem.find(Category.class, childCategory.getCategoryIdx());
-            targetChildCategory.setParentCategory(parentCategory2);
+            Category targetChildCategory = tem.find(Category.class, childCategory.getIdx());
+            targetChildCategory.updateInfo(null, parentCategory2);
             tem.merge(targetChildCategory);
             tem.flush();
             tem.clear();
-            Category updatedCategory = tem.find(Category.class, childCategory.getCategoryIdx());
+            Category updatedCategory = tem.find(Category.class, childCategory.getIdx());
 
             // then
             assertThat(updatedCategory)
@@ -249,27 +236,24 @@ public class CategoryCrudTest {
             String parentBefore = "parentBefore";
             String parentAfter = "parentAfter";
             String child = "child";
-            Category parentCategory = Category.builder()
-                .name(parentBefore)
-                .build();
+            Category parentCategory = MockEntity.mock(Category.class);
+            parentCategory.updateInfo(parentBefore, null);
             tem.persist(parentCategory);
             tem.clear();
 
-            Category childCategory = Category.builder()
-                .name(child)
-                .parentCategory(tem.find(Category.class, parentCategory.getCategoryIdx()))
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo(child, tem.find(Category.class, parentCategory.getIdx()));
             tem.persist(childCategory);
             tem.clear();
 
             // when
-            Category targetParentCategory = tem.find(Category.class, parentCategory.getCategoryIdx());
-            targetParentCategory.setName(parentAfter);
+            Category targetParentCategory = tem.find(Category.class, parentCategory.getIdx());
+            targetParentCategory.updateInfo(parentAfter, null);
             tem.merge(targetParentCategory);
             tem.flush();
             tem.clear();
-            Category updatedParent = tem.find(Category.class, parentCategory.getCategoryIdx());
-            Category updatedChild = tem.find(Category.class, childCategory.getCategoryIdx());
+            Category updatedParent = tem.find(Category.class, parentCategory.getIdx());
+            Category updatedChild = tem.find(Category.class, childCategory.getIdx());
 
             // then
             assertThat(updatedParent)
@@ -294,15 +278,14 @@ public class CategoryCrudTest {
         @DisplayName("성공: 최상위 카테고리를 삭제한다.")
         void Success_TopLevelCategory_Delete() {
             // given
-            Category category = Category.builder()
-                .name("category")
-                .build();
+            Category category = MockEntity.mock(Category.class);
+            category.updateInfo("category", null);
             tem.persist(category);
             tem.clear();
 
             // when
             Throwable notThrown = catchThrowable(() -> {
-                tem.remove(tem.find(Category.class, category.getCategoryIdx()));
+                tem.remove(tem.find(Category.class, category.getIdx()));
                 tem.flush();
                 tem.clear();
             });
@@ -316,22 +299,19 @@ public class CategoryCrudTest {
         @DisplayName("성공: 하위 카테고리를 삭제한다.")
         void Success_SubCategory_delete() {
             // given
-            Category parentCategory = Category.builder()
-                .name("parent")
-                .build();
+            Category parentCategory = MockEntity.mock(Category.class);
+            parentCategory.updateInfo("parent", null);
             tem.persist(parentCategory);
             tem.clear();
 
-            Category childCategory = Category.builder()
-                .name("child")
-                .parentCategory(tem.find(Category.class, parentCategory.getCategoryIdx()))
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo("child", tem.find(Category.class, parentCategory.getIdx()));
             tem.persist(childCategory);
             tem.clear();
 
             // when
             Throwable notThrown = catchThrowable(() -> {
-                tem.remove(tem.find(Category.class, childCategory.getCategoryIdx()));
+                tem.remove(tem.find(Category.class, childCategory.getIdx()));
                 tem.flush();
                 tem.clear();
             });
@@ -345,22 +325,19 @@ public class CategoryCrudTest {
         @DisplayName("성공: parentCategory로 참조되는 category를 삭제한다.")
         void Success_CategoryReferencedToOthers_CascadeDelete() {
             // given
-            Category parentCategory = Category.builder()
-                .name("parent")
-                .build();
+            Category parentCategory = MockEntity.mock(Category.class);
+            parentCategory.updateInfo("parent", null);
             tem.persist(parentCategory);
             tem.clear();
 
-            Category childCategory = Category.builder()
-                .name("child")
-                .parentCategory(tem.find(Category.class, parentCategory.getCategoryIdx()))
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo("child", tem.find(Category.class, parentCategory.getIdx()));
             tem.persist(childCategory);
             tem.clear();
 
             // when
             Throwable notThrown = catchThrowable(() -> {
-                tem.remove(tem.find(Category.class, parentCategory.getCategoryIdx()));
+                tem.remove(tem.find(Category.class, parentCategory.getIdx()));
                 tem.flush();
                 tem.clear();
             });

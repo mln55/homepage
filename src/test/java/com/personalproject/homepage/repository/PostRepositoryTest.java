@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.helper.MockEntity;
 import com.personalproject.homepage.paging.Pagination;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -76,23 +77,17 @@ public class PostRepositoryTest {
     void resetPersist() {
         // parent
         //  └ child1
-        savedParentCategory = Category.builder()
-            .name("parent")
-            .build();
+
+        savedParentCategory = MockEntity.mock(Category.class);
+        savedParentCategory.updateInfo("parent", null);
         categoryRepository.save(savedParentCategory);
 
-        savedChildCategory = Category.builder()
-            .name("child")
-            .parentCategory(savedParentCategory)
-            .build();
+        savedChildCategory = MockEntity.mock(Category.class);
+        savedChildCategory.updateInfo("child", savedParentCategory);
         categoryRepository.save(savedChildCategory);
 
-        savedPost = Post.builder()
-            .title("title")
-            .content("content")
-            .visible(true)
-            .category(savedParentCategory)
-            .build();
+        savedPost = MockEntity.mock(Post.class);
+        savedPost.updateInfo(savedParentCategory, "title", "content", true);
         postRepository.save(savedPost);
     }
 
@@ -103,18 +98,15 @@ public class PostRepositoryTest {
         @DisplayName("성공: 카테고리가 없는 포스트를 추가한다.")
         void Success_PostWithNoCategory_Create() {
             // given
-            Post post = Post.builder()
-                .title("title")
-                .content("content")
-                .visible(true)
-                .build();
+            Post post = MockEntity.mock(Post.class);
+            post.updateInfo(null, "title", "content", true);
 
             // when
             Post savedPost = postRepository.save(post);
 
             // then
             assertThat(savedPost)
-                .extracting("postIdx")
+                .extracting("idx")
                 .isNotNull();
             assertThat(savedPost)
                 .extracting("category")
@@ -125,19 +117,15 @@ public class PostRepositoryTest {
         @DisplayName("성공: 카테고리가 있는 포스트를 추가한다.")
         void Success_PostWithCategory_Create() {
             // given - savedChildCategory
-            Post post = Post.builder()
-                .title("title")
-                .content("content")
-                .visible(true)
-                .category(savedChildCategory)
-                .build();
+            Post post = MockEntity.mock(Post.class);
+            post.updateInfo(savedChildCategory, "title", "content", true);
 
             // when
             Post newPost = postRepository.save(post);
 
             // then
             assertThat(newPost)
-                .extracting("postIdx")
+                .extracting("idx")
                 .isNotNull();
             assertThat(newPost)
                 .extracting("category")
@@ -156,7 +144,7 @@ public class PostRepositoryTest {
             // given - savedPost
 
             // when
-            Optional<Post> post = postRepository.findById(savedPost.getPostIdx());
+            Optional<Post> post = postRepository.findById(savedPost.getIdx());
 
             // then
             assertThat(post)
@@ -168,11 +156,9 @@ public class PostRepositoryTest {
         void Success_PostsPerPage_ReturnPostList() {
             // given - total 11 posts including savedPost
             for (int i = 0; i < 10; ++i) {
-                postRepository.save(Post.builder()
-                    .title("title" + i)
-                    .content("content" + i)
-                    .visible(true)
-                    .build());
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(null, "title" + i, "content" + i, true);
+                postRepository.save(p);
                 try {
                     Thread.sleep(30);
                 } catch (Exception e) {/** empty */}
@@ -194,14 +180,12 @@ public class PostRepositoryTest {
         void Success_PostsIsVisiblePerPage_ReturnPostList() {
             // given - total 11 posts but 6 are visible including savedPost
             for (int i = 0; i < 10; ++i) {
-                postRepository.save(Post.builder()
-                    .title("title" + i)
-                    .content("content" + i)
-                    .visible(i % 2 == 0)
-                    .build());
-                    try {
-                        Thread.sleep(30);
-                    } catch (Exception e) {/** empty */}
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(null, "title" + i, "content" + i, i % 2 == 0);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
             }
 
             // when
@@ -221,15 +205,12 @@ public class PostRepositoryTest {
         void Success_PostsByCategoryPerPage_ReturnPostList() {
             // given - total 11 posts including savedPost in same category
             for (int i = 0; i < 10; ++i) {
-                postRepository.save(Post.builder()
-                    .title("title" + i)
-                    .content("content" + i)
-                    .category(savedParentCategory)
-                    .visible(true)
-                    .build());
-                    try {
-                        Thread.sleep(30);
-                    } catch (Exception e) {/** empty */}
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(savedParentCategory, "title" + i, "content" + i, true);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
             }
 
             // when
@@ -249,15 +230,12 @@ public class PostRepositoryTest {
         void Success_PostsIsVisibleByCategoryPerPage_ReturnPostList() {
             // given - total 10 posts but 5 are visible in savedChildCategory
             for (int i = 0; i < 10; ++i) {
-                postRepository.save(Post.builder()
-                    .title("title" + i)
-                    .content("content" + i)
-                    .category(savedChildCategory)
-                    .visible(i % 2 == 0)
-                    .build());
-                    try {
-                        Thread.sleep(30);
-                    } catch (Exception e) {/** empty */}
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
             }
 
             // when
@@ -285,13 +263,9 @@ public class PostRepositoryTest {
             boolean visible = false;
 
             // when
-            savedPost.setTitle(title);
-            savedPost.setContent(content);
-            savedPost.setVisible(visible);
-            savedPost.setCategory(savedChildCategory);
-            postRepository.save(savedPost);
+            savedPost.updateInfo(savedChildCategory, title, content, visible);
 
-            Post updatedPost = postRepository.findById(savedPost.getPostIdx()).orElseThrow();
+            Post updatedPost = postRepository.findById(savedPost.getIdx()).orElseThrow();
 
             /********************************************************************************
                 @DataJpaTest가 붙은 Test class는 transactional하며
@@ -317,7 +291,7 @@ public class PostRepositoryTest {
 
             // when
             postRepository.delete(savedPost);
-            Optional<Post> deletedPost = postRepository.findById(savedPost.getPostIdx());
+            Optional<Post> deletedPost = postRepository.findById(savedPost.getIdx());
 
             // then
             assertThat(deletedPost)

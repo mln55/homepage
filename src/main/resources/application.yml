@@ -9,7 +9,7 @@ server:
 
 spring:
   profiles:
-    default: dev
+    active: dev
 
   mvc:
     static-path-pattern: static/**
@@ -20,3 +20,9 @@ spring:
   devtools:
     livereload:
       enabled: true
+
+# 배포 시 logback-spring.xml의 scan을 true로 한다.
+# 아래 외부 경로에 해당 xml file을 위치
+# logback 변경 사항 발생 시 application을 재시작 않고 수정 가능하다.
+# logging:
+#   config: [외부 경로]

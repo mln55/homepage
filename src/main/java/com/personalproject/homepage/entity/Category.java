@@ -6,9 +6,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -20,19 +17,13 @@ import org.hibernate.annotations.DynamicUpdate;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Entity
 @Table(uniqueConstraints = @UniqueConstraint(columnNames = { "name", "parent_category_idx" }))
 @Getter
-@Setter
 @DynamicInsert
 @DynamicUpdate
 public class Category extends CommonEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long categoryIdx;
 
     private String name;
 
@@ -46,16 +37,26 @@ public class Category extends CommonEntity {
     @OneToMany(mappedBy = "category")
     private Set<Post> postsOfCategory = new HashSet<>();
 
-    public Category() {/** empty */}
+    /********************************************************************************
+        https://docs.jboss.org/hibernate/orm/5.4/quickstart/html_single/
+
+        Invisible no args constructor prevents creating Entity instance via new keyword causing null fields.
+        To get new a instance, call Builder class.
+        Invoke updateInfo method in order to update existent instance.
+    ********************************************************************************/
+    Category() {/** empty */}
 
     @Builder
-    public Category(String name, Category parentCategory) {
-        checkArgument(name != null, "Category name은 null일 수 없습니다.");
-
+    private Category (String name, Category parentCategory) {
+        checkArgument(name != null, "Category Entity name must not be null");
         this.name = name;
-        if (parentCategory != null) {
-            setParentCategory(parentCategory);
-        }
+        this.parentCategory = parentCategory;
+    }
+
+    public void updateInfo(String name, Category parentCategory) {
+        // args could be nullable because it's just update
+        if (name != null) this.name = name;
+        if (parentCategory != null) setParentCategory(parentCategory);
     }
 
     /********************************************************************************
@@ -64,11 +65,8 @@ public class Category extends CommonEntity {
         RDBMS에선 외래키를 통해 관계를 관리 하지만
         객체의 관점에선 각각이 서로에 대한 정보만 가지고 있으므로
         mappedBy owner를 가진 엔티티에서 그 관계를 설정해 주어야 한다.
-
-        현재는 setter함수로 만들어 set 함수 호출 및
-        빌더클래스 내부에서 호출하도록 하고 있다.
-    ********************************************************************************/
-    public void setParentCategory(Category parentCategory) {
+        ********************************************************************************/
+    private void setParentCategory(Category parentCategory) {
         // 매핑 되어있는 관계를 끊는다.
         if (this.parentCategory != null) {
             this.parentCategory.getCategoriesOfCategory().remove(this);

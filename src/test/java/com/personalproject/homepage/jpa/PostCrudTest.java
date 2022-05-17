@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.helper.MockEntity;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -34,11 +35,8 @@ public class PostCrudTest {
     // not null 컬럼을 채운 기본 post 객체 생성
     @BeforeEach
     void resetPost() {
-        this.post = Post.builder()
-            .title("title")
-            .content("content")
-            .visible(true)
-            .build();
+        this.post = MockEntity.mock(Post.class);
+        post.updateInfo(null, "title", "content", true);
     }
 
     /********************************************************************************
@@ -69,7 +67,7 @@ public class PostCrudTest {
             tem.clear();
 
             // when
-            Post savedPost = tem.find(Post.class, post.getPostIdx());
+            Post savedPost = tem.find(Post.class, post.getIdx());
 
             // then
             assertThat(savedPost)
@@ -83,16 +81,15 @@ public class PostCrudTest {
         @DisplayName("성공: 포스트 추가 - 카테고리 있음")
         void Success_PostWithCategory_Create() {
             // given
-            Category category = Category.builder()
-                .name("category")
-                .build();
+            Category category = MockEntity.mock(Category.class);
+            category.updateInfo("category", null);
             tem.persist(category);
-            post.setCategory(category);
+            post.updateInfo(category, null, null, null);
             tem.persist(post);
             tem.clear();
 
             // when
-            Post savedPost = tem.find(Post.class, post.getPostIdx());
+            Post savedPost = tem.find(Post.class, post.getIdx());
 
             // then
             assertThat(savedPost)
@@ -116,15 +113,14 @@ public class PostCrudTest {
             tem.clear();
 
             // when
-            Post targetPost = tem.find(Post.class, post.getPostIdx());
-            targetPost.setTitle(titleChanged);
-            targetPost.setVisible(false);
+            Post targetPost = tem.find(Post.class, post.getIdx());
+            targetPost.updateInfo(null, titleChanged, null, false);
 
             tem.merge(targetPost);
             tem.flush();
             tem.clear();
 
-            Post updatedPost = tem.find(Post.class, post.getPostIdx());
+            Post updatedPost = tem.find(Post.class, post.getIdx());
 
             // then
             assertThat(updatedPost)
@@ -147,10 +143,10 @@ public class PostCrudTest {
             tem.clear();
 
             // when
-            tem.remove(tem.find(Post.class, post.getPostIdx()));
+            tem.remove(tem.find(Post.class, post.getIdx()));
             tem.flush();
             tem.clear();
-            Throwable thrown = catchThrowable(() -> tem.find(Post.class, post.getPostIdx()));
+            Throwable thrown = catchThrowable(() -> tem.find(Post.class, post.getIdx()));
 
             // then
             assertThat(thrown)

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.personalproject.homepage.entity.Category;
+import com.personalproject.homepage.helper.MockEntity;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -76,19 +77,15 @@ public class CategoryRepositoryTest {
 
     @BeforeEach
     void resetPersist() {
-        savedParentCategory1 = Category.builder()
-            .name("savedParent1")
-            .build();
-        savedParentCategory2 = Category.builder()
-            .name("savedParent2")
-            .build();
+        savedParentCategory1 = MockEntity.mock(Category.class);
+        savedParentCategory1.updateInfo("savedParent1", null);
+        savedParentCategory2 = MockEntity.mock(Category.class);
+        savedParentCategory2.updateInfo("savedParent2", null);
         categoryRepository.save(savedParentCategory1);
         categoryRepository.save(savedParentCategory2);
 
-        savedChildCategory = Category.builder()
-            .name("savedChild")
-            .parentCategory(savedParentCategory1)
-            .build();
+        savedChildCategory = MockEntity.mock(Category.class);
+        savedChildCategory.updateInfo("savedChild", savedParentCategory1);
         categoryRepository.save(savedChildCategory);
     }
 
@@ -99,16 +96,15 @@ public class CategoryRepositoryTest {
         @DisplayName("성공: 최상위 카테고리를 추가한다.")
         void Success_TopLevelCategory_Create() {
             // given
-            Category category = Category.builder()
-                .name("category")
-                .build();
+            Category category = MockEntity.mock(Category.class);
+            category.updateInfo("category", null);
 
             // when
             categoryRepository.save(category);
 
             // then
             assertThat(category)
-                .extracting("categoryIdx")
+                .extracting("idx")
                 .isNotNull();
         }
 
@@ -122,9 +118,8 @@ public class CategoryRepositoryTest {
                         service 객체에서 반드시 검증을 거쳐야 한다.
             ********************************************************************************/
             // given - savedParentCategory1
-            Category duplicatedCategory = Category.builder()
-                .name(savedParentCategory1.getName())
-                .build();
+            Category duplicatedCategory = MockEntity.mock(Category.class);
+            duplicatedCategory.updateInfo(savedParentCategory1.getName(), null);
 
             // when
             categoryRepository.save(duplicatedCategory);
@@ -134,18 +129,16 @@ public class CategoryRepositoryTest {
                 .extracting("name")
                 .isEqualTo(savedParentCategory1.getName());
             assertThat(duplicatedCategory)
-                .extracting("categoryIdx")
-                .isNotEqualTo(savedParentCategory1.getCategoryIdx());
+                .extracting("idx")
+                .isNotEqualTo(savedParentCategory1.getIdx());
         }
 
         @Test
         @DisplayName("성공: 하위 카테고리를 추가한다.")
         void Success_SubCategoryOfExistentCategory_Create() {
             // given - savedParentCategory1
-            Category childCategory = Category.builder()
-                .name("child")
-                .parentCategory(savedParentCategory1)
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo("child", savedParentCategory1);
 
             // when
             categoryRepository.save(childCategory);
@@ -160,15 +153,11 @@ public class CategoryRepositoryTest {
         @DisplayName("실패: 존재하지 않는 카테고리에 하위 카테고리 추가 - throw Exception")
         void Fail_SubCategoryOfNonExistentCategory_ThrowException() {
             // given
-            Category parentCategory = Category.builder()
-                .name("parent")
-                .build();
-            parentCategory.setCategoryIdx(0L); // 강제로 idx 입력
+            Category parentCategory = MockEntity.mock(Category.class, 0L); // 존재하지 않는 카테고리
+            parentCategory.updateInfo("parent", null);
 
-            Category childCategory = Category.builder()
-                .name("child")
-                .parentCategory(parentCategory)
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo("child", parentCategory);
 
             // when
             Throwable thrown = catchThrowable(() -> categoryRepository.save(childCategory));
@@ -182,10 +171,8 @@ public class CategoryRepositoryTest {
         @DisplayName("실패: 중복된 하위 카테고리 추가 - throw Exception")
         void Fail_DuplicatedSubCategoryOfOneCategory_ThrowException() {
             // given - savedParentCategory1
-            Category duplicatedChildCategory = Category.builder()
-                .name("savedChild")
-                .parentCategory(savedParentCategory1)
-                .build();
+            Category duplicatedChildCategory = MockEntity.mock(Category.class);
+            duplicatedChildCategory.updateInfo("savedChild", savedParentCategory1);
 
             // when
             Throwable thrown = catchThrowable(() -> categoryRepository.save(duplicatedChildCategory));
@@ -262,10 +249,8 @@ public class CategoryRepositoryTest {
         @DisplayName("성공: 카테고리의 모든 하위 카테고리를 List로 반환한다.")
         void Success_AllSubCategoryOfOneCategory_ReturnCategoryList() {
             // given - child of parent1 at resetPersist()
-            Category childCategory = Category.builder()
-                .name("newSavedChild")
-                .parentCategory(savedParentCategory1)
-                .build();
+            Category childCategory = MockEntity.mock(Category.class);
+            childCategory.updateInfo("newSavedChild", savedParentCategory1);
             categoryRepository.save(childCategory);
 
             // when
@@ -290,8 +275,7 @@ public class CategoryRepositoryTest {
             // given - savedParentCategory1
 
             // then
-            savedParentCategory1.setName("changed");
-            categoryRepository.save(savedParentCategory1);
+            savedParentCategory1.updateInfo("changed", null);
 
             boolean isPresent = categoryRepository.existsByName("changed");
             assertThat(isPresent)
@@ -304,8 +288,7 @@ public class CategoryRepositoryTest {
             // given - savedParentCategory1
 
             // when
-            savedParentCategory1.setName("changed");
-            categoryRepository.save(savedParentCategory1);
+            savedParentCategory1.updateInfo("changed", null);
 
             Category updatedParentCategory = categoryRepository.findByName("changed").orElseThrow();
             Category updatedChildCategory = categoryRepository.findByName("savedChild").orElseThrow();

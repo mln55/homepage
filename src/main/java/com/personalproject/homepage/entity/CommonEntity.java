@@ -2,29 +2,40 @@ package com.personalproject.homepage.entity;
 
 import java.time.LocalDateTime;
 
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.PrePersist;
 import javax.persistence.PreUpdate;
 
 import lombok.Getter;
-import lombok.Setter;
 
 @Getter
-@Setter
 @MappedSuperclass
 public class CommonEntity {
+
+    /********************************************************************************
+        Setting fields to private makes them unchangeable from inherited class.
+    ********************************************************************************/
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long idx;
 
     private LocalDateTime createAt;
 
     private LocalDateTime updateAt;
 
+    protected CommonEntity() {/** empty */}
+
     @PrePersist
-    public void create() {
-        this.setCreateAt(LocalDateTime.now());
+    private void create() {
+        createAt = LocalDateTime.now();
     }
 
     @PreUpdate
-    public void update() {
-        this.setUpdateAt(LocalDateTime.now());
+    private void update() {
+        updateAt = LocalDateTime.now();
+
     }
 }

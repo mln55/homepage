@@ -3,9 +3,6 @@ package com.personalproject.homepage.entity;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 
@@ -14,18 +11,12 @@ import org.hibernate.annotations.DynamicUpdate;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
 
 @Entity
 @Getter
-@Setter
 @DynamicUpdate
 @DynamicInsert
 public class Post extends CommonEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long postIdx;
 
     @ManyToOne
     @JoinColumn(name = "category_idx")
@@ -39,23 +30,28 @@ public class Post extends CommonEntity {
 
     private Boolean visible;
 
-    public Post() {/** empty */}
+    Post() {/** empty */}
 
     @Builder
-    public Post(String title, String content, Boolean visible, Category category) {
-        checkArgument(title != null, "Post title은 null일 수 없습니다.");
-        checkArgument(content != null, "Post content은 null일 수 없습니다.");
-        checkArgument(visible != null, "Post visible은 null일 수 없습니다.");
+    private Post (Category category, String title, String content, Boolean visible) {
+        checkArgument(title != null, "Post Entity title must not be null");
+        checkArgument(content != null, "Post Entity content must not be null");
+        checkArgument(visible != null, "Post Entity visible must not be null");
+
+        this.category = category;
         this.title = title;
         this.content = content;
         this.visible = visible;
-
-        if (category != null) {
-            setCategory(category);
-        }
     }
 
-    public void setCategory(Category category) {
+    public void updateInfo(Category category, String title, String content, Boolean visible) {
+        if (category != null) setCategory(category);
+        if (title != null) this.title = title;
+        if (content != null) this.content = content;
+        if (visible != null) this.visible = visible;
+    }
+
+    private void setCategory(Category category) {
         if (this.category != null) {
             this.category.getPostsOfCategory().remove(this);
         }

@@ -7,12 +7,11 @@ import com.personalproject.homepage.entity.Category;
 
 public interface CategoryRepository extends CommonRepository<Category, Long> {
 
-    Optional<Category> findByName(String name);
+    Optional<Category> findByNameAndParentCategory(String name, Category parentCategory);
 
     List<Category> findAllByParentCategory(Category parentCategory);
 
     List<Category> findAllByParentCategoryIsNull();
 
-    boolean existsByName(String name);
-
+    boolean existsByNameAndParentCategory(String name, Category parentCategory);
 }

@@ -55,8 +55,6 @@ public class CategoryCrudTest {
             - 카테고리 이름 변경
         {@link Test_Update_Category#Success_ParentCategory_Update}
             - 상위 카테고리 변경
-        {@link Test_Update_Category#Success_NameOfCategoryReferencedToOthers_CascadeUpdate}
-            - 참조 되는 카테고리의 이름을 변경한다.
 
     Delete
         {@link Test_Delete_Category#Success_TopLevelCategory_Delete}
@@ -227,47 +225,6 @@ public class CategoryCrudTest {
             assertThat(updatedCategory)
                 .extracting("updateAt")
                 .isInstanceOf(LocalDateTime.class);
-        }
-
-        @Test
-        @DisplayName("성공: - 다른 곳에 참조 되는 카테고리의 이름을 변경한다.")
-        void Success_NameOfCategoryReferencedToOthers_CascadeUpdate() {
-            // given
-            String parentBefore = "parentBefore";
-            String parentAfter = "parentAfter";
-            String child = "child";
-            Category parentCategory = MockEntity.mock(Category.class);
-            parentCategory.updateInfo(parentBefore, null);
-            tem.persist(parentCategory);
-            tem.clear();
-
-            Category childCategory = MockEntity.mock(Category.class);
-            childCategory.updateInfo(child, tem.find(Category.class, parentCategory.getIdx()));
-            tem.persist(childCategory);
-            tem.clear();
-
-            // when
-            Category targetParentCategory = tem.find(Category.class, parentCategory.getIdx());
-            targetParentCategory.updateInfo(parentAfter, null);
-            tem.merge(targetParentCategory);
-            tem.flush();
-            tem.clear();
-            Category updatedParent = tem.find(Category.class, parentCategory.getIdx());
-            Category updatedChild = tem.find(Category.class, childCategory.getIdx());
-
-            // then
-            assertThat(updatedParent)
-                .extracting("name")
-                .isEqualTo(parentAfter);
-            assertThat(updatedParent)
-                .extracting("updateAt")
-                .isInstanceOf(LocalDateTime.class);
-            assertThat(updatedChild)
-                .extracting("parentCategory.name")
-                .isEqualTo(parentAfter);
-            assertThat(updatedChild)
-                .extracting("updateAt")
-                .isNull();
         }
     }
 

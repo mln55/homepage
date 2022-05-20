@@ -65,8 +65,6 @@ public class CategoryRepositoryTest {
     Update
         {@link Test_Update_Category#Success_CategoryName_Update}
             - 카테고리 이름을 변경한다.
-        {@link Test_Update_Category#Success_CategoryNameReferencedAsOthers_CascadeUpdate}
-            - 다른 곳에 참조되는 카테고리의 이름을 변경한다.
 
     Delete
         {@link Test_Delete_Category#Success_OneCategory_Delete}
@@ -189,11 +187,11 @@ public class CategoryRepositoryTest {
         @Test
         @DisplayName("성공: 카테고리 명으로 카테고리 Optional을 반환한다.")
         void Success_OneCategory_ReturnCategoryOptional() {
-            // given - savedChildCategory
+            // given - savedParentCategory1, savedChildCategory
             String name = "savedChild";
 
             // when
-            Optional<Category> savedCategory = categoryRepository.findByName(name);
+            Optional<Category> savedCategory = categoryRepository.findByNameAndParentCategory(name, savedParentCategory1);
 
             // then
             assertThat(savedCategory)
@@ -203,11 +201,11 @@ public class CategoryRepositoryTest {
         @Test
         @DisplayName("성공: 카테고리가 있는 지를 boolean으로 반환한다.")
         void Success_WheterCategoryExist_ReturnBoolean() {
-            // given - savedChildCategory
+            // given - savedParentCategory1, savedChildCategory
             String name = "savedChild";
 
             // when
-            boolean isPresent = categoryRepository.existsByName(name);
+            boolean isPresent = categoryRepository.existsByNameAndParentCategory(name, savedParentCategory1);
 
             // then
             assertThat(isPresent)
@@ -277,29 +275,9 @@ public class CategoryRepositoryTest {
             // then
             savedParentCategory1.updateInfo("changed", null);
 
-            boolean isPresent = categoryRepository.existsByName("changed");
+            boolean isPresent = categoryRepository.existsByNameAndParentCategory("changed", null);
             assertThat(isPresent)
                 .isTrue();
-        }
-
-        @Test
-        @DisplayName("성공: 다른 곳에 참조되는 카테고리의 이름을 변경한다.")
-        void Success_CategoryNameReferencedAsOthers_CascadeUpdate() {
-            // given - savedParentCategory1
-
-            // when
-            savedParentCategory1.updateInfo("changed", null);
-
-            Category updatedParentCategory = categoryRepository.findByName("changed").orElseThrow();
-            Category updatedChildCategory = categoryRepository.findByName("savedChild").orElseThrow();
-
-            // then
-            assertThat(updatedParentCategory)
-                .extracting("name")
-                .isEqualTo("changed");
-            assertThat(updatedChildCategory)
-                .extracting("parentCategory.name")
-                .isEqualTo("changed");
         }
     }
 
@@ -313,7 +291,7 @@ public class CategoryRepositoryTest {
 
             // when
             categoryRepository.delete(savedParentCategory2);
-            boolean isPresent = categoryRepository.existsByName("savedParent2");
+            boolean isPresent = categoryRepository.existsByNameAndParentCategory("savedParent2", null);
 
             // then
             assertThat(isPresent)
@@ -327,8 +305,8 @@ public class CategoryRepositoryTest {
 
             // when
             categoryRepository.delete(savedParentCategory1);
-            boolean isPresentParent = categoryRepository.existsByName("savedParent1");
-            boolean isPresentChild = categoryRepository.existsByName("savedChild");
+            boolean isPresentParent = categoryRepository.existsByNameAndParentCategory("savedParent1", null);
+            boolean isPresentChild = categoryRepository.existsByNameAndParentCategory("savedChild", savedParentCategory1);
 
             // then
             assertThat(isPresentParent)

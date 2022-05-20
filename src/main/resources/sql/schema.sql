@@ -23,8 +23,8 @@ CREATE TABLE post (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 ALTER TABLE category ADD CONSTRAINT fk_category_parent_category_idx FOREIGN KEY (parent_category_idx) REFERENCES category (idx)
-ON UPDATE CASCADE ON DELETE CASCADE;
+ON DELETE CASCADE;
+
 ALTER TABLE category ADD UNIQUE unique_category_name_and_parent_category_idx (name, parent_category_idx);
 
-ALTER TABLE post ADD CONSTRAINT fk_post_category_idx FOREIGN KEY (category_idx) REFERENCES category (idx)
-ON UPDATE CASCADE ON DELETE RESTRICT;
+ALTER TABLE post ADD CONSTRAINT fk_post_category_idx FOREIGN KEY (category_idx) REFERENCES category (idx);

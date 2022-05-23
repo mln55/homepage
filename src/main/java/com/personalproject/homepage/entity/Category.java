@@ -27,6 +27,13 @@ public class Category extends CommonEntity {
 
     private String name;
 
+    /********************************************************************************
+        자기 참조 외래키로서, 계층이 깊어질 수도 있다.
+        idx로 find하지 않기에 원하는 entity를 찾기 위해 재귀적 탐색이 필요하다.
+        불필요하게 복잡해지는 프로세스를 막기 위해
+        최상위(parentCategory == null)
+        하위(parentCategory != null)인 두 종류의 entity만 입력받을 수 있게 한다.
+    ********************************************************************************/
     @ManyToOne
     @JoinColumn(name = "parent_category_idx")
     private Category parentCategory;
@@ -48,7 +55,10 @@ public class Category extends CommonEntity {
 
     @Builder
     private Category (String name, Category parentCategory) {
-        checkArgument(name != null, "Category Entity name must not be null");
+        /********************************************************************************
+            생성 시 name != null이어야 하지만
+            변경 시 null name이 들어와도 변경 대상에서 제외되므로 null check는 create시 수행한다.
+        ********************************************************************************/
         this.name = name;
         this.parentCategory = parentCategory;
     }
@@ -56,7 +66,8 @@ public class Category extends CommonEntity {
     public void updateInfo(String name, Category parentCategory) {
         // args could be nullable because it's just update
         if (name != null) this.name = name;
-        if (parentCategory != null) setParentCategory(parentCategory);
+        if (this.parentCategory == null && parentCategory == null) return;
+        setParentCategory(parentCategory); // null로 변경할 경우 top-level이 된다.
     }
 
     /********************************************************************************
@@ -73,6 +84,8 @@ public class Category extends CommonEntity {
         }
         // 양쪽 객체에 새로운 관계를 맺는다.
         this.parentCategory = parentCategory;
-        parentCategory.getCategoriesOfCategory().add(this);
+        if (parentCategory != null) {
+            parentCategory.getCategoriesOfCategory().add(this);
+        }
     }
 }

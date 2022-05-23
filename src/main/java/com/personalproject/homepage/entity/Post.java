@@ -34,10 +34,11 @@ public class Post extends CommonEntity {
 
     @Builder
     private Post (Category category, String title, String content, Boolean visible) {
-        checkArgument(title != null, "Post Entity title must not be null");
-        checkArgument(content != null, "Post Entity content must not be null");
-        checkArgument(visible != null, "Post Entity visible must not be null");
-
+        /********************************************************************************
+            생성 시 title, content, visible이 not null이어야 하지만
+            변경 시 null인 field는 변경 대상에서 제외될 수 있으므로
+            null check는 create시 수행한다.
+        ********************************************************************************/
         this.category = category;
         this.title = title;
         this.content = content;
@@ -45,10 +46,11 @@ public class Post extends CommonEntity {
     }
 
     public void updateInfo(Category category, String title, String content, Boolean visible) {
-        if (category != null) setCategory(category);
         if (title != null) this.title = title;
         if (content != null) this.content = content;
         if (visible != null) this.visible = visible;
+        if (this.category == null && category == null) return;
+        setCategory(category); // null로 변경할 경우 카테고리가 없다.
     }
 
     private void setCategory(Category category) {
@@ -56,6 +58,12 @@ public class Post extends CommonEntity {
             this.category.getPostsOfCategory().remove(this);
         }
         this.category = category;
-        category.getPostsOfCategory().add(this);
+        if (category != null) {
+            category.getPostsOfCategory().add(this);
+        }
+    }
+
+    public void addHit() {
+        ++this.hit;
     }
 }

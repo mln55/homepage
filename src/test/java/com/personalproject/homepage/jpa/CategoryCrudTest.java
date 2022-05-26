@@ -1,6 +1,7 @@
 package com.personalproject.homepage.jpa;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.time.LocalDateTime;
 
@@ -34,36 +35,6 @@ public class CategoryCrudTest {
     public CategoryCrudTest(TestEntityManager testEntityManager) {
         this.tem = testEntityManager;
     }
-
-    /********************************************************************************
-                    Category Entity 클래스에 대한 CRUD 수행을 테스트한다.
-
-    Create
-        {@link Test_Create_Category#Success_TopLevelCategory_Create}
-            - 최상위 카테고리를 추가
-        {@link Test_Create_Category#Success_SubCategory_Create}
-            - 하위 카테고리를 추가
-        {@link Test_Create_Category#Fail_DulpicatedSubCategory_ThrowException}
-            - 중복되는 하위 카테고리를 추가
-
-    Read - SKIP
-        기본키는 AUTO_INCREMENT BIGINT이다.
-        기본키로 검색하는 상황은 없을 것이라 생각하여 스킵한다.
-
-    Update
-        {@link Test_Update_Category#Success_Name_Update}
-            - 카테고리 이름 변경
-        {@link Test_Update_Category#Success_ParentCategory_Update}
-            - 상위 카테고리 변경
-
-    Delete
-        {@link Test_Delete_Category#Success_TopLevelCategory_Delete}
-            - 최상위 카테고리를 삭제한다.
-        {@link Test_Delete_Category#Success_SubCategory_delete}
-            - 하위 카테고리를 삭제한다.
-        {@link Test_Delete_Category#Success_CategoryReferencedToOthers_CascadeDelete}
-            - 상위 카테고리로 참조되는 카테고리를 삭제한다.
-*********************************************************************************/
 
     @Nested
     @DisplayName("Create")

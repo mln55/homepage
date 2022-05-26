@@ -1,8 +1,11 @@
 package com.personalproject.homepage.service;
 
-import static org.assertj.core.api.Assertions.*;
-
-import static org.mockito.BDDMockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,54 +65,6 @@ public class CategoryServiceTest {
         testChildCategoryEntity = MockEntity.mock(Category.class, 100L);
         testChildCategoryEntity.updateInfo("testChild", testParentCategoryEntity);
     }
-
-    /********************************************************************************
-                    CategoryService의 상황에 따른 동작을 테스트 한다.
-
-    Create
-        {@link Test_Create_Category#Success_NewTopLevelCategory_ReturnDto}
-            - 최상위 카테고리를 추가하고 dto를 반환한다.
-        {@link Test_Create_Category#Fail_NullNameCategory_ThrowException}
-            - 카테고리 name이 null일 경우 예외를 던진다.
-        {@link Test_Create_Category#Fail_DuplicatedTopLevelCategory_ThrowException}
-            - 중복된 최상위 카테고리 추가 시 예외를 던진다.
-        {@link Test_Create_Category#Success_NewSubCategoryOfExistentCategory_ReturnDto}
-            - 하위 카테고리를 추가하고 dto를 반환한다.
-        {@link Test_Create_Category#Fail_DuplicatedSubCategoryOfOneCategory_ThrowException}
-            - 중복된 하위 카테고리 추가 시 예외를 던진다
-        {@link Test_Create_Category#Fail_SubCategoryOfNonExistentCategory_ThrowException}
-            - 존재하지 않는 카테고리에 하위 카테고리 추가 시 예외를 던진다
-
-    Read
-        {@link Test_Read_Category#Success_AllCategory_ReturnDtoList}
-            - 모든 카테고리를 dto List 로 반환한다.
-        {@link Test_Read_Category#Success_AllTopLevelCategory_ReturnDtoList}
-            - 모든 최상위 카테고리를 dto List로 반환한다.
-        {@link Test_Read_Category#Success_AllSubCategoryOfOneCategory_ReturnDtoList}
-            - 카테고리에 속한 모든 하위 카테고리를 dto List로 반환한다.
-
-    Update
-        {@link Test_Update_Category#Success_CategoryName_ReturnDto}
-            - 카테고리 이름을 변경하고 dto를 반환한다.
-        {@link Test_Update_Category#Success_ParentCategory_ReturnDto}
-            - 부모 카테고리를 변경하고 dto를 반환한다.
-        {@link Test_Update_Category#Success_NullParentCategory_ReturnDto}
-            - 부모 카테고리를 null로 변경하여 top-level로 만든다.
-        {@link Test_Update_Category#Fail_DuplicatedCategory_ThrowException}
-            - 중복되는 카테고리로 변경 시 예외를 던진다.
-        {@link Test_Update_Category#Fail_NonExistentParentCategory_ThrowException}
-            - 존재 하지 않는 부모 카테고리로 변경 시 예외를 던진다.
-
-    Delete
-        {@link Test_Delete_Category#Success_OneCategory_ReturnTrue}
-            - 카테고리 하나를 삭제하고 true를 반환한다.
-        {@link Test_Delete_Category#Fail_NonExistentCategory_ThrowException}
-            - 존재하지 않는 카테고리 삭제 시 예외를 던진다.
-        {@link Test_Delete_Category#Success_ParentCategoryOfOtherCategory_ReturnTrue}
-            - 다른 카테고리의 부모 카테고리인 것을 삭제하고 true를 반환한다.
-        {@link Test_Delete_Category#Fail_CategoryOfPosts_ThrowException}
-            - 포스트의 카테고리로 참조되는 카테고리 제거 시 예외를 던진다.
-    ********************************************************************************/
 
     @Nested
     @DisplayName("Create")

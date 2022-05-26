@@ -1,8 +1,11 @@
 package com.personalproject.homepage.service;
 
-import static org.assertj.core.api.Assertions.*;
-
-import static org.mockito.BDDMockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,46 +57,6 @@ public class PostServiceTest {
         testPostEntity = MockEntity.mock(Post.class, 99L);
         testPostEntity.updateInfo(testCategoryEntity, "title", "content", true);
     }
-
-    /********************************************************************************
-                    CategoryService의 상황에 따른 동작을 테스트 한다.
-
-    Create
-        {@link Test_Create_Post#Success_NewPostWithNoCategory_ReturnDto}
-            - 카테고리가 없는 포스트를 추가하고 dto를 반환한다.
-        {@link Test_Create_Post#Success_NewPostWithCategory_ReturnDto}
-            - 카테고리가 있는 포스트를 추가하고 dto를 반환한다.
-
-    Read
-        {@link Test_Read_Post#Success_OnePostById_ReturnDto}
-            - id에 맞는 포스트를 반환한다.
-        {@link Test_Read_Post#Fail_OnePostByInvalidId_ThrowException}
-            - id에 맞지 않는 포스트 요청 시 예외를 던진다.
-        {@link Test_Read_Post#Success_PostsByAnyCategoryPerPage_ReturnDtoList}
-            - 페이지에 맞는 포스트를 dto list로 반환한다.
-        {@link Test_Read_Post#Success_PostsByOneCategoryPerPage_ReturnDtoList}
-            - 카테고리, 페이지에 맞는 포스트를 dto list로 반환한다.
-        {@link Test_Read_Post#Fail_PostsByInvalidCategoryPerPage_ThrowException}
-            - 존재하지 않는 카테고리의 포스트 요청 시 예외를 던진다.
-        {@link Test_Read_Post#Success_VisiblePostsByAnyCategoryPerPage_ReturnDtoList}
-            - 페이지에 맞는 visible인 포스트를 dto list로 반환한다.
-        {@link Test_Read_Post#Success_VisiblePostsByOneCategoryPerPage_ReturnDtoList}
-            - 카테고리, 페이지에 맞는 visible인 포스트를 dto list로 반환한다.
-        {@link Test_Read_Post#Fail_VisiblePostsByInvalidCategoryPerPage_ThrowException}
-            - 존재하지 않는 카테고리의 visible인 포스트 요청 시 예외를 던진다.
-
-    Update
-        {@link Test_Update_Post#Success_PostDetailById_ReturnDto}
-            - 포스트 내용을 변경하고 dto를 반환한다.
-        {@link Test_Update_Post#Fail_PostDetailByInvalidId_ThrowException}
-            - 존재하지 않는 포스트 수정 시 예외를 던진다.
-
-    Delete
-        {@link Test_Delete_Post#Success_OnePostById_ReturnTrue}
-            - id에 맞는 포스트 하나를 삭제하고 true를 반환한다.
-        {@link Test_Delete_Post#Success_OnePostByInvalidId_ThrowException}
-            - 존재하지 않는 포스트 삭제 시 예외를 던진다.
-    ********************************************************************************/
 
     @Nested
     @DisplayName("Create")

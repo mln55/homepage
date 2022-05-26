@@ -1,6 +1,7 @@
 package com.personalproject.homepage.jpa;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.time.LocalDateTime;
 
@@ -38,23 +39,6 @@ public class PostCrudTest {
         this.post = MockEntity.mock(Post.class);
         post.updateInfo(null, "title", "content", true);
     }
-
-    /********************************************************************************
-                    Post Entity에 대한 CRUD 수행을 테스트한다.
-
-    Create
-        {@link Test_CreateWithRead_Post#Success_PostWithNoCategory_Create}
-            - 카테고리가 없는 포스트 추가
-        {@link Test_CreateWithRead_Post#Success_PostWithCategory_Create}
-            - 카테고리가 있는 포스트 추가
-
-    Update
-        {@link Test_Update_Post#Success_PostDetail_Update}
-            - 포스트의 내용 변경
-    Delete
-        {@link Test_Delete_Post#Success_OnePost_Delete}
-            - 아디디에 맞는 포스트 삭제
-*********************************************************************************/
 
     @Nested
     @DisplayName("Create With Read")

@@ -1,6 +1,6 @@
 package com.personalproject.homepage.repository;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Comparator;
 import java.util.List;
@@ -39,39 +39,6 @@ public class PostRepositoryTest {
         this.postRepository = postRepository;
         this.categoryRepository = categoryRepository;
     }
-
-    /********************************************************************************
-                    PostyRepository의 상황에 따른 동작을 테스트 한다.
-
-    {@link #resetPersist}
-        - @BeforeEach 카테고리, 포스트를 test db에 insert한다.
-
-    Create
-        {@link Test_Create_Post#Success_PostWithNoCategory_Create}
-            - 카테고리가 없는 포스트를 추가한다.
-        {@link Test_Create_Post#Success_PostWithCategory_Create}
-            - 카테고리가 있는 포스트를 추가한다.
-
-    Read
-        {@link Test_Read_Post#Success_OnePost_ReturnPostOptional}
-            - 포스트 하나를 Optional<Post>로 반환한다.
-        {@link Test_Read_Post#Success_PostsPerPage_ReturnPostList}
-            - 페이지에 맞는 List<Post>를 반환한다.
-        {@link Test_Read_Post#Success_PostsIsVisiblePerPage_ReturnPostList}
-            - 페이지에 맞는 visible == ture인 List<Post>를 반환한다.
-        {@link Test_Read_Post#Success_PostsByCategoryPerPage_ReturnPostList}
-            - 카테고리, 페이지에 맞는 List<Post>를 반환한다.
-        {@link Test_Read_Post#Success_PostsIsVisibleByCategoryPerPage_ReturnPostList}
-            - 카테고리, 페이지에 visible == true인 List<Post>를 반환한다.
-
-    Update
-        {@link Test_Update_Post#Success_PostDetail_Update}
-            - 포스트 내용을 변경한다.
-
-    Delete
-        {@link Test_Delete_Post#Success_OnePost_Delete}
-            - 포스트를 삭제한다.
-    ********************************************************************************/
 
     @BeforeEach
     void resetPersist() {

@@ -1,6 +1,7 @@
 package com.personalproject.homepage.repository;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,45 +34,6 @@ public class CategoryRepositoryTest {
     public CategoryRepositoryTest(CategoryRepository categoryRepository) {
         this.categoryRepository = categoryRepository;
     }
-    /********************************************************************************
-                    CategoryRepository의 상황에 따른 동작을 테스트 한다.
-
-    {@link #resetPersist}
-        @BeforeEach test db에 카테고리를 insert한다.
-
-    Create
-        {@link Test_Create_Category#Success_TopLevelCategory_Create}
-            - 최상위 카테고리를 추가한다.
-        {@link Test_Create_Category#Success_DuplicatedTopLevelCategory_Create}
-            - 중복된 최상위 카테고리를 추가한다. **주의**
-        {@link Test_Create_Category#Success_SubCategoryOfExistentCategory_Create}
-            - 하위 카테고리를 추가한다.
-        {@link Test_Create_Category#Fail_SubCategoryOfNonExistentCategory_ThrowException}
-            - 존재하지 않는 카테고리에 하위 카테고리 추가 시 예외를 던진다
-        {@link Test_Create_Category#Fail_DuplicatedSubCategoryOfOneCategory_ThrowException}
-            - 중복된 하위 카테고리 추가 시 예외를 던진다
-
-    Read
-        {@link Test_Read_Category#Success_OneCategory_ReturnCategoryOptional}
-            - 카테고리 하나를 Optional<Category>로 반환한다.
-        {@link Test_Read_Category#Success_WheterCategoryExist_ReturnBoolean}
-            - 카테고리 존재 여부를 boolean으로 반환한다.
-        {@link Test_Read_Category#Success_AllCategory_ReturnCategoryList}
-            - 모든 카테고리를 List<Category>로 반환한다.
-        {@link Test_Read_Category#Success_AllTopLevelCategory_ReturnCategoryList}
-            - 모든 최상위 카테고리를 List<Category>로 반환한다.
-        {@link Test_Read_Category#Success_AllSubCategoryOfOneCategory_ReturnCategoryList}
-            - 카테고리에 속한 모든 하위 카테고리를 List<Category>로 반환한다.
-    Update
-        {@link Test_Update_Category#Success_CategoryName_Update}
-            - 카테고리 이름을 변경한다.
-
-    Delete
-        {@link Test_Delete_Category#Success_OneCategory_Delete}
-            - 카테고리 하나를 삭제한다.
-        {@link Test_Delete_Category#Success_CategoryReferencedAsOthers_CascadeDelete}
-            - 다른 곳에 참조되는 카테고리를 삭제한다.
-    ********************************************************************************/
 
     @BeforeEach
     void resetPersist() {

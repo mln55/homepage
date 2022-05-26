@@ -1,7 +1,5 @@
 package com.personalproject.homepage.entity;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;

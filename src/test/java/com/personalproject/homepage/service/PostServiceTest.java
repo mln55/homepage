@@ -12,6 +12,7 @@ import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.dto.PostDto;
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.helper.MockEntity;
 import com.personalproject.homepage.mapper.CategoryMapper;
 import com.personalproject.homepage.mapper.PostMapper;
@@ -185,7 +186,7 @@ public class PostServiceTest {
             verify(postRepository).findById(id);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("존재하지 않는 포스트입니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("포스트"));
         }
 
         @Test
@@ -249,7 +250,7 @@ public class PostServiceTest {
             verify(categoryMapper).CategoryDtoToEntity(categoryDto);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("존재하지 않는 카테고리입니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
         }
 
         @Test
@@ -312,7 +313,7 @@ public class PostServiceTest {
             verify(categoryMapper).CategoryDtoToEntity(categoryDto);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("존재하지 않는 카테고리입니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
         }
     }
 
@@ -373,7 +374,7 @@ public class PostServiceTest {
             verify(postRepository).findById(invalidId);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("존재하지 않는 포스트입니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("포스트"));
         }
     }
 
@@ -412,7 +413,7 @@ public class PostServiceTest {
             verify(postRepository, times(0)).delete(any(Post.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("존재하지 않는 포스트입니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("포스트"));
         }
     }
 }

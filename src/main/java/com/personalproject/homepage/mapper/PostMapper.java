@@ -6,6 +6,8 @@ import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.dto.PostDto;
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.error.ErrorMessage;
+import com.personalproject.homepage.error.ApiException;
 import com.personalproject.homepage.repository.PostRepository;
 
 import org.springframework.stereotype.Component;
@@ -21,7 +23,7 @@ public class PostMapper {
     private final CategoryMapper categoryMapper;
 
     public PostDto entityToPostDto(Post entity) {
-        checkArgument(entity != null, "Post Entity는 null일 수 없습니다.");
+        checkArgument(entity != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("Post Entity"));
         Category category = entity.getCategory();
         CategoryDto categoryDto = category == null ? null : categoryMapper.entityToCategoryDto(category);
         return PostDto.builder()
@@ -37,7 +39,7 @@ public class PostMapper {
     }
 
     public Post postDtoToEntity(PostDto postDto) {
-        checkArgument(postDto != null, "PostDto는 null일 수 없습니다.");
+        checkArgument(postDto != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("PostDto"));
         Post entity;
         Long id = postDto.getId();
 
@@ -46,7 +48,7 @@ public class PostMapper {
             CategoryDto categoryDto = postDto.getCategory();
             Category category = categoryDto == null ? null : categoryMapper.CategoryDtoToEntity(categoryDto);
             if (category != null) {
-                checkArgument(category.getIdx() != null, "존재하지 않는 카테고리입니다.");
+                checkArgument(category.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
             }
             entity = Post.builder()
                 .category(category)
@@ -58,7 +60,7 @@ public class PostMapper {
         // id != null -> 저장된 entity를 조회한다.
         } else {
             entity = postRepository.findById(id).orElseThrow(
-                () -> new IllegalArgumentException("존재하지 않는 포스트입니다.")
+                () -> new ApiException(ErrorMessage.NON_EXISTENT, "포스트")
             );
         }
         return entity;

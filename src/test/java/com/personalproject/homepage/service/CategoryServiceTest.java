@@ -11,6 +11,7 @@ import java.util.Optional;
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.helper.MockEntity;
 import com.personalproject.homepage.mapper.CategoryMapper;
 import com.personalproject.homepage.repository.CategoryRepository;
@@ -149,7 +150,7 @@ public class CategoryServiceTest {
             verify(categoryRepository, times(0)).delete(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("name은 null일 수 없습니다.");
+                .hasMessage(ErrorMessage.NOT_ALLOWED_NULL.getMessage("name"));
         }
 
         @Test
@@ -168,7 +169,7 @@ public class CategoryServiceTest {
             verify(categoryRepository).findByNameAndParentCategory(name, null);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("이미 존재하는 카테고리입니다.");
+                .hasMessage(ErrorMessage.ALREADY_EXISTENT.getMessage("카테고리"));
         }
 
         @Test
@@ -219,7 +220,7 @@ public class CategoryServiceTest {
             verify(categoryRepository, times(0)).save(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("이미 존재하는 카테고리입니다.");
+                .hasMessage(ErrorMessage.ALREADY_EXISTENT.getMessage("카테고리"));
         }
 
         @Test
@@ -239,7 +240,7 @@ public class CategoryServiceTest {
             verify(categoryRepository, times(0)).save(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("상위 카테고리가 존재하지 않습니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("상위 카테고리"));
         }
     }
 
@@ -437,7 +438,7 @@ public class CategoryServiceTest {
             verify(categoryRepository).findByNameAndParentCategory(duplicatedName, null);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("이미 존재하는 카테고리입니다.");
+                .hasMessage(ErrorMessage.ALREADY_EXISTENT.getMessage("카테고리"));
         }
 
         @Test
@@ -466,7 +467,7 @@ public class CategoryServiceTest {
             verify(categoryRepository).findByNameAndParentCategory(invalidParent, null);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("상위 카테고리가 존재하지 않습니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("상위 카테고리"));
         }
     }
 
@@ -512,7 +513,7 @@ public class CategoryServiceTest {
             verify(categoryRepository, times(0)).delete(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("존재하지 않는 카테고리입니다.");
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
         }
 
         @Test
@@ -553,7 +554,7 @@ public class CategoryServiceTest {
             verify(categoryRepository, times(0)).delete(category);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage("카테고리에 속한 포스트가 있어 삭제할 수 없습니다.");
+                .hasMessage(ErrorMessage.NOT_REMOVEABLE_CATEGORY.getMessage());
         }
     }
 }

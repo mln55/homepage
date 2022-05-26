@@ -1,7 +1,5 @@
 package com.personalproject.homepage.entity;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.util.HashSet;
 import java.util.Set;
 

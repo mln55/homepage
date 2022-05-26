@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.entity.Category;
+import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.mapper.CategoryMapper;
 import com.personalproject.homepage.repository.CategoryRepository;
 
@@ -24,11 +25,11 @@ public class CategoryService {
     private final CategoryMapper categoryMapper;
 
     public CategoryDto createCategory(CategoryDto categoryDto) {
-        checkArgument(categoryDto != null, "CategoryDto는 null일 수 없습니다.");
-        checkArgument(categoryDto.getName() != null, "name은 null일 수 없습니다.");
+        checkArgument(categoryDto != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("CategoryDto"));
+        checkArgument(categoryDto.getName() != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("name"));
 
         Category entity = categoryMapper.CategoryDtoToEntity(categoryDto);
-        checkArgument(entity.getIdx() == null, "이미 존재하는 카테고리입니다.");
+        checkArgument(entity.getIdx() == null, ErrorMessage.ALREADY_EXISTENT.getMessage("카테고리"));
 
         return categoryMapper.entityToCategoryDto(categoryRepository.save(entity));
     }
@@ -49,9 +50,9 @@ public class CategoryService {
 
     @Transactional(readOnly = true)
     public List<CategoryDto> getAllSubCategoriesOf(CategoryDto categoryDto) {
-        checkArgument(categoryDto != null, "CategoryDto는 null일 수 없습니다.");
+        checkArgument(categoryDto != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("CategoryDto"));
         Category entity = categoryMapper.CategoryDtoToEntity(categoryDto);
-        checkArgument(entity.getIdx() != null, "존재하지 않는 카테고리입니다.");
+        checkArgument(entity.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
 
         return entity.getCategoriesOfCategory()
             .stream()
@@ -61,22 +62,22 @@ public class CategoryService {
 
     @Transactional
     public CategoryDto updateCategory(CategoryDto before, CategoryDto after) {
-        checkArgument(before != null && after != null, "CategoryDto는 null일 수 없습니다.");
+        checkArgument(before != null && after != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("CategoryDto"));
         String beforeName = before.getName();
         String beforeParentName = before.getParent();
         String afterName = after.getName();
         String afterParentName = after.getParent();
 
         Category entityBefore = categoryMapper.CategoryDtoToEntity(before);
-        checkArgument(entityBefore.getIdx() != null, "존재하지 않는 카테고리입니다.");
+        checkArgument(entityBefore.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
 
         boolean updatable = (afterName != null && !afterName.equals(beforeName))
-            || (afterParentName != null && !afterParentName.equals(beforeParentName))
-            || (beforeParentName != null && !beforeParentName.equals(afterParentName));
-        checkArgument(updatable, "수정할 변경 사항이 없습니다.");
+            || (beforeParentName != null && !beforeParentName.equals(afterParentName))
+            || (afterParentName != null && !afterParentName.equals(beforeParentName));
+        checkArgument(updatable, ErrorMessage.NO_CHANGES.getMessage());
 
         Category entityAfter = categoryMapper.CategoryDtoToEntity(after);
-        checkArgument(entityAfter.getIdx() == null, "이미 존재하는 카테고리입니다.");
+        checkArgument(entityAfter.getIdx() == null, ErrorMessage.ALREADY_EXISTENT.getMessage("카테고리"));
 
         entityBefore.updateInfo(entityAfter.getName(), entityAfter.getParentCategory());
         return categoryMapper.entityToCategoryDto(entityBefore);
@@ -84,11 +85,11 @@ public class CategoryService {
 
     @Transactional
     public boolean deleteCategory(CategoryDto categoryDto) {
-        checkArgument(categoryDto != null, "CategoryDto는 null일 수 없습니다.");
+        checkArgument(categoryDto != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("카테고리"));
 
         Category entity = categoryMapper.CategoryDtoToEntity(categoryDto);
-        checkArgument(entity.getIdx() != null, "존재하지 않는 카테고리입니다.");
-        checkArgument(entity.getPostsOfCategory().size() == 0, "카테고리에 속한 포스트가 있어 삭제할 수 없습니다.");
+        checkArgument(entity.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
+        checkArgument(entity.getPostsOfCategory().size() == 0, ErrorMessage.NOT_REMOVEABLE_CATEGORY.getMessage());
         categoryRepository.delete(entity);
         return true;
     }

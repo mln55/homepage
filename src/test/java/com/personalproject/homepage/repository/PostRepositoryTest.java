@@ -9,7 +9,6 @@ import java.util.Optional;
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
 import com.personalproject.homepage.helper.MockEntity;
-import com.personalproject.homepage.paging.Pagination;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 
 @DataJpaTest
@@ -26,13 +29,18 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class PostRepositoryTest {
 
+    private final PostRepository postRepository;
+    private final CategoryRepository categoryRepository;
+
+    private final int testPage = 0;
+    private final int testSize = 8;
+    private final Sort testSort = Sort.by(Direction.DESC, "createAt");
+    private final Pageable testPageable = PageRequest.of(testPage, testSize, testSort);
+    private final Comparator<Post> createAtDescComp = (p1, p2) -> p1.getCreateAt().isAfter(p2.getCreateAt()) ? -1 : 1;
+
     private Category savedParentCategory;
     private Category savedChildCategory;
     private Post savedPost;
-    private Comparator<Post> createAtDescComp = (p1, p2) -> p1.getCreateAt().isAfter(p2.getCreateAt()) ? -1 : 1;
-
-    private final PostRepository postRepository;
-    private final CategoryRepository categoryRepository;
 
     @Autowired
     public PostRepositoryTest(PostRepository postRepository, CategoryRepository categoryRepository) {
@@ -132,14 +140,14 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAll(Pagination.DEFAULT_PAGEREQUEST(1));
+            List<Post> postList = postRepository.findAll(testPageable);
 
             // then
             assertThat(postList)
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, Pagination.DEFAULT_PAGE_SIZE)
+                .hasSizeBetween(0, testSize)
                 .size()
-                .isEqualTo(Pagination.DEFAULT_PAGE_SIZE);
+                .isEqualTo(testSize);
         }
 
         @Test
@@ -156,13 +164,13 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByVisibleTrue(Pagination.DEFAULT_PAGEREQUEST(1));
+            List<Post> postList = postRepository.findAllByVisibleTrue(testPageable);
 
             // then
             assertThat(postList)
                 .allMatch(p -> p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, Pagination.DEFAULT_PAGE_SIZE)
+                .hasSizeBetween(0, testSize)
                 .size()
                 .isEqualTo(6);
         }
@@ -181,15 +189,15 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByCategory(savedParentCategory, Pagination.DEFAULT_PAGEREQUEST(1));
+            List<Post> postList = postRepository.findAllByCategory(savedParentCategory, testPageable);
 
             // then
             assertThat(postList)
                 .allMatch(p -> p.getCategory().getName().equals(savedParentCategory.getName()))
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, Pagination.DEFAULT_PAGE_SIZE)
+                .hasSizeBetween(0, testSize)
                 .size()
-                .isEqualTo(Pagination.DEFAULT_PAGE_SIZE);
+                .isEqualTo(testSize);
         }
 
         @Test
@@ -206,13 +214,13 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByVisibleTrueAndCategory(savedChildCategory, Pagination.DEFAULT_PAGEREQUEST(1));
+            List<Post> postList = postRepository.findAllByVisibleTrueAndCategory(savedChildCategory, testPageable);
 
             // then
             assertThat(postList)
                 .allMatch(p -> p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, Pagination.DEFAULT_PAGE_SIZE)
+                .hasSizeBetween(0, testSize)
                 .size()
                 .isEqualTo(5);
         }

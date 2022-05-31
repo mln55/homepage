@@ -19,7 +19,6 @@ import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.helper.MockEntity;
 import com.personalproject.homepage.mapper.CategoryMapper;
 import com.personalproject.homepage.mapper.PostMapper;
-import com.personalproject.homepage.paging.Pagination;
 import com.personalproject.homepage.repository.PostRepository;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -30,19 +29,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
 public class PostServiceTest {
 
+    private final int testPage = 0;
+    private final int testSize = 8;
+    private final Sort testSort = Sort.by(Direction.DESC, "createAt");
+    private final Pageable testPageable = PageRequest.of(testPage, testSize, testSort);
+
     @Mock private PostRepository postRepository;
     @Mock private CategoryMapper categoryMapper;
+
     private PostMapper postMapper;
     private PostService postService;
-    private final Pageable PAGEABLE = Pagination.DEFAULT_PAGEREQUEST(1);
-
     private Category testCategoryEntity;
     private Post testPostEntity;
 
@@ -158,16 +164,16 @@ public class PostServiceTest {
             // given - testPostEntity
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
-            given(postRepository.findAll(PAGEABLE)).willReturn(postEntityList);
+            given(postRepository.findAll(testPageable)).willReturn(postEntityList);
 
             // when
-            List<PostDto> returnDtoList = postService.getPosts(PAGEABLE);
+            List<PostDto> returnDtoList = postService.getPosts(testPageable);
 
             // then
-            verify(postRepository).findAll(PAGEABLE);
+            verify(postRepository).findAll(testPageable);
             assertThat(returnDtoList)
                 .size()
-                .isBetween(0, Pagination.DEFAULT_PAGE_SIZE);
+                .isBetween(0, testSize);
         }
 
         @Test
@@ -180,20 +186,20 @@ public class PostServiceTest {
             postEntityList.add(testPostEntity);
             CategoryDto inputCategoryDto = CategoryDto.builder().name(name).build();
             given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(category);
-            given(postRepository.findAllByCategory(category, PAGEABLE)).willReturn(postEntityList);
+            given(postRepository.findAllByCategory(category, testPageable)).willReturn(postEntityList);
             given(categoryMapper.entityToCategoryDto(category)).willReturn(CategoryDto.builder().name(name).build());
 
             // when
-            List<PostDto> returnDtoList = postService.getPostsByCategory(inputCategoryDto, PAGEABLE);
+            List<PostDto> returnDtoList = postService.getPostsByCategory(inputCategoryDto, testPageable);
 
             // then
             verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
-            verify(postRepository).findAllByCategory(category, PAGEABLE);
+            verify(postRepository).findAllByCategory(category, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(category);
             assertThat(returnDtoList)
                 .allMatch(p -> p.getCategory().getName().equals(name))
                 .size()
-                .isBetween(0, Pagination.DEFAULT_PAGE_SIZE);
+                .isBetween(0, testSize);
         }
 
         @Test
@@ -207,7 +213,7 @@ public class PostServiceTest {
             given(categoryMapper.CategoryDtoToEntity(categoryDto)).willReturn(invalidCategory);
 
             // when
-            Throwable thrown = catchThrowable(() -> postService.getPostsByCategory(categoryDto, PAGEABLE));
+            Throwable thrown = catchThrowable(() -> postService.getPostsByCategory(categoryDto, testPageable));
 
             // then
             verify(categoryMapper).CategoryDtoToEntity(categoryDto);
@@ -222,17 +228,17 @@ public class PostServiceTest {
             // given - testPostEntity
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
-            given(postRepository.findAllByVisibleTrue(PAGEABLE)).willReturn(postEntityList);
+            given(postRepository.findAllByVisibleTrue(testPageable)).willReturn(postEntityList);
 
             // when
-            List<PostDto> returnDtoList = postService.getVisiblePosts(PAGEABLE);
+            List<PostDto> returnDtoList = postService.getVisiblePosts(testPageable);
 
             // then
-            verify(postRepository).findAllByVisibleTrue(PAGEABLE);
+            verify(postRepository).findAllByVisibleTrue(testPageable);
             assertThat(returnDtoList)
                 .allMatch(p -> p.getVisible())
                 .size()
-                .isBetween(0, Pagination.DEFAULT_PAGE_SIZE);
+                .isBetween(0, testSize);
         }
 
         @Test
@@ -244,19 +250,19 @@ public class PostServiceTest {
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
 
-            given(postRepository.findAllByVisibleTrue(PAGEABLE)).willReturn(postEntityList);
+            given(postRepository.findAllByVisibleTrue(testPageable)).willReturn(postEntityList);
             given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).build());
 
             // when
-            List<PostDto> returnDtoList = postService.getVisiblePosts(PAGEABLE);
+            List<PostDto> returnDtoList = postService.getVisiblePosts(testPageable);
 
             // then
-            verify(postRepository).findAllByVisibleTrue(PAGEABLE);
+            verify(postRepository).findAllByVisibleTrue(testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
             assertThat(returnDtoList)
                 .allMatch(p -> p.getVisible() && p.getCategory().getName().equals(name))
                 .size()
-                .isBetween(0, Pagination.DEFAULT_PAGE_SIZE);
+                .isBetween(0, testSize);
         }
 
         @Test
@@ -270,7 +276,7 @@ public class PostServiceTest {
             given(categoryMapper.CategoryDtoToEntity(categoryDto)).willReturn(invalidCategory);
 
             // when
-            Throwable thrown = catchThrowable(() -> postService.getVisiblePostsByCategory(categoryDto, PAGEABLE));
+            Throwable thrown = catchThrowable(() -> postService.getVisiblePostsByCategory(categoryDto, testPageable));
 
             // then
             verify(categoryMapper).CategoryDtoToEntity(categoryDto);

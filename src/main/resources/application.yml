@@ -12,6 +12,7 @@ spring:
     active: dev
 
   mvc:
+    throw-exception-if-no-handler-found: true # mapping에 대한 handler가 없을 때 예외 던짐
     static-path-pattern: static/**
   thymeleaf:
     cache: false

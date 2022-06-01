@@ -13,7 +13,11 @@ public interface PostRepository extends CommonRepository<Post, Long> {
 
     List<Post> findAllByVisibleTrue(Pageable pageable);
 
+    List<Post> findAllByVisibleFalse(Pageable pageable);
+
     List<Post> findAllByCategory(Category category, Pageable pageable);
 
     List<Post> findAllByVisibleTrueAndCategory(Category category, Pageable pageable);
+
+    List<Post> findAllByVisibleFalseAndCategory(Category category, Pageable pageable);
 }

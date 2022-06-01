@@ -176,6 +176,31 @@ public class PostRepositoryTest {
         }
 
         @Test
+        @DisplayName("성공: 페이지에 맞는 visible == false인 List<Post>를 반환한다.")
+        void Success_PostsInvisiblePerPage_ReturnPostList() {
+            // given - total 11 posts but 5 are invisible including savedPost
+            for (int i = 0; i < 10; ++i) {
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(null, "title" + i, "content" + i, i % 2 == 0);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
+            }
+
+            // when
+            List<Post> postList = postRepository.findAllByVisibleFalse(testPageable);
+
+            // then
+            assertThat(postList)
+                .allMatch(p -> !p.getVisible())
+                .isSortedAccordingTo(createAtDescComp)
+                .hasSizeBetween(0, testSize)
+                .size()
+                .isEqualTo(5);
+        }
+
+        @Test
         @DisplayName("성공: 카테고리, 페이지에 맞는 List<Post>를 반환한다.")
         void Success_PostsByCategoryPerPage_ReturnPostList() {
             // given - total 11 posts including savedPost in same category
@@ -225,6 +250,30 @@ public class PostRepositoryTest {
                 .isEqualTo(5);
         }
 
+        @Test
+        @DisplayName("성공: 카테고리, 페이지에 맞는 visible == false인 List<Post>를 반환한다.")
+        void Success_PostsIsInvisibleByCategoryPerPage_ReturnPostList() {
+            // given - total 10 posts but 5 are invisible in savedChildCategory
+            for (int i = 0; i < 10; ++i) {
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
+            }
+
+            // when
+            List<Post> postList = postRepository.findAllByVisibleFalseAndCategory(savedChildCategory, testPageable);
+
+            // then
+            assertThat(postList)
+                .allMatch(p -> !p.getVisible())
+                .isSortedAccordingTo(createAtDescComp)
+                .hasSizeBetween(0, testSize)
+                .size()
+                .isEqualTo(5);
+        }
     }
     @Nested
     @DisplayName("Update")

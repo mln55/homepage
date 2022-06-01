@@ -68,21 +68,27 @@ public class PostService {
             .collect(Collectors.toList());
     }
 
-    public List<PostDto> getVisiblePosts(Pageable pageable) {
-        return postRepository.findAllByVisibleTrue(pageable)
-            .stream()
+    public List<PostDto> getPostsByVisible(Boolean visible, Pageable pageable) {
+        checkArgument(visible != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
+        return (visible
+            ? postRepository.findAllByVisibleTrue(pageable)
+            : postRepository.findAllByVisibleFalse(pageable)
+        ).stream()
             .map(postMapper::entityToPostDto)
             .collect(Collectors.toList());
     }
 
-    public List<PostDto> getVisiblePostsByCategory(CategoryDto categoryDto, Pageable pageable) {
+    public List<PostDto> getPostsByVisibleAndCategory(Boolean visible, CategoryDto categoryDto, Pageable pageable) {
         checkArgument(categoryDto != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("CategoryDto"));
         Category categoryEntity = categoryMapper.CategoryDtoToEntity(categoryDto);
         checkArgument(categoryEntity.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
-        return postRepository.findAllByVisibleTrueAndCategory(categoryEntity, pageable)
-            .stream()
-            .map(postMapper::entityToPostDto)
-            .collect(Collectors.toList());
+        checkArgument(visible != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
+        return (visible
+            ? postRepository.findAllByVisibleTrueAndCategory(categoryEntity, pageable)
+            : postRepository.findAllByVisibleFalseAndCategory(categoryEntity, pageable)
+        ).stream()
+        .map(postMapper::entityToPostDto)
+        .collect(Collectors.toList());
     }
 
     @Transactional

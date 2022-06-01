@@ -231,7 +231,7 @@ public class PostServiceTest {
             given(postRepository.findAllByVisibleTrue(testPageable)).willReturn(postEntityList);
 
             // when
-            List<PostDto> returnDtoList = postService.getVisiblePosts(testPageable);
+            List<PostDto> returnDtoList = postService.getPostsByVisible(true, testPageable);
 
             // then
             verify(postRepository).findAllByVisibleTrue(testPageable);
@@ -254,7 +254,7 @@ public class PostServiceTest {
             given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).build());
 
             // when
-            List<PostDto> returnDtoList = postService.getVisiblePosts(testPageable);
+            List<PostDto> returnDtoList = postService.getPostsByVisible(true, testPageable);
 
             // then
             verify(postRepository).findAllByVisibleTrue(testPageable);
@@ -276,7 +276,72 @@ public class PostServiceTest {
             given(categoryMapper.CategoryDtoToEntity(categoryDto)).willReturn(invalidCategory);
 
             // when
-            Throwable thrown = catchThrowable(() -> postService.getVisiblePostsByCategory(categoryDto, testPageable));
+            Throwable thrown = catchThrowable(() -> postService.getPostsByVisibleAndCategory(true, categoryDto, testPageable));
+
+            // then
+            verify(categoryMapper).CategoryDtoToEntity(categoryDto);
+            assertThat(thrown)
+                .isInstanceOf(Exception.class)
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
+        }
+
+        @Test
+        @DisplayName("성공: 페이지에 맞는 invisible인 포스트를 dto list로 반환한다.")
+        void Success_InvisiblePostsByAnyCategoryPerPage_ReturnDtoList() {
+            // given - testPostEntity
+            testPostEntity.updateInfo(null, null, null, false);
+            List<Post> postEntityList = new ArrayList<>();
+            postEntityList.add(testPostEntity);
+            given(postRepository.findAllByVisibleFalse(testPageable)).willReturn(postEntityList);
+
+            // when
+            List<PostDto> returnDtoList = postService.getPostsByVisible(false, testPageable);
+
+            // then
+            verify(postRepository).findAllByVisibleFalse(testPageable);
+            assertThat(returnDtoList)
+                .allMatch(p -> !p.getVisible())
+                .size()
+                .isBetween(0, testSize);
+        }
+
+        @Test
+        @DisplayName("성공: 카테고리, 페이지에 맞는 invisible인 포스트를 dto list로 반환한다.")
+        void Success_InvisiblePostsByOneCategoryPerPage_ReturnDtoList() {
+            // given - testCategoryEntity, testPostEntity
+            Category category = testCategoryEntity;
+            String name = category.getName();
+            testPostEntity.updateInfo(category, null, null, false);
+            List<Post> postEntityList = new ArrayList<>();
+            postEntityList.add(testPostEntity);
+
+            given(postRepository.findAllByVisibleFalse(testPageable)).willReturn(postEntityList);
+            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).build());
+
+            // when
+            List<PostDto> returnDtoList = postService.getPostsByVisible(false, testPageable);
+
+            // then
+            verify(postRepository).findAllByVisibleFalse(testPageable);
+            verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
+            assertThat(returnDtoList)
+                .allMatch(p -> !p.getVisible() && p.getCategory().getName().equals(name))
+                .size()
+                .isBetween(0, testSize);
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 카테고리의 invisible인 포스트 요청 시 예외를 던진다.")
+        void Fail_InvisiblePostsByInvalidCategoryPerPage_ThrowException() {
+            // given
+            String name = "invalid";
+            CategoryDto categoryDto = CategoryDto.builder().name(name).build();
+            Category invalidCategory = MockEntity.mock(Category.class);
+            invalidCategory.updateInfo(name, null);
+            given(categoryMapper.CategoryDtoToEntity(categoryDto)).willReturn(invalidCategory);
+
+            // when
+            Throwable thrown = catchThrowable(() -> postService.getPostsByVisibleAndCategory(false, categoryDto, testPageable));
 
             // then
             verify(categoryMapper).CategoryDtoToEntity(categoryDto);

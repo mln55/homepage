@@ -15,6 +15,7 @@ public enum ErrorMessage {
     NOT_REMOVEABLE_CATEGORY("카테고리에 속한 포스트가 있어 삭제할 수 없습니다.", HttpStatus.BAD_REQUEST),
     EMPTY_QUERY_STRING("query string %이(가) 비어있습니다.", HttpStatus.BAD_REQUEST),
     INVALID_QUERY_STRING("%의 값이 유효하지 않습니다. 유효한 값: %", HttpStatus.BAD_REQUEST),
+    INVALID_PATH_PARAM("%의 값이 유효하지 않습니다", HttpStatus.BAD_REQUEST),
 
     API_NOT_FOUND("존재하지 않는 URL입니다.", HttpStatus.NOT_FOUND),
 

@@ -2,6 +2,7 @@ package com.personalproject.homepage.config;
 
 import java.util.List;
 
+import com.personalproject.homepage.config.web.CategoryDtoHandlerMethodArgumentResolver;
 import com.personalproject.homepage.config.web.SimplePageableHandlerMethodArgumentResolver;
 
 import org.springframework.context.annotation.Bean;
@@ -26,10 +27,16 @@ public class WebConfig implements WebMvcConfigurer {
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         // org.springframework.data.domain.Pageable에 대한 argument resolver를 등록한다.
         resolvers.add(simplePageaHandlerMethodArgumentResolver());
+        resolvers.add(categoryDtoHandlerMethodArgumentResolver());
     }
 
     @Bean
     public HandlerMethodArgumentResolver simplePageaHandlerMethodArgumentResolver() {
         return new SimplePageableHandlerMethodArgumentResolver();
+    }
+
+    @Bean
+    public HandlerMethodArgumentResolver categoryDtoHandlerMethodArgumentResolver() {
+        return new CategoryDtoHandlerMethodArgumentResolver();
     }
 }

@@ -27,3 +27,16 @@ spring:
 # logback 변경 사항 발생 시 application을 재시작 않고 수정 가능하다.
 # logging:
 #   config: [외부 경로]
+
+security:
+  admin:
+    id: admin
+    pw: $2a$10$1w3.64lFbB/fUgrJGJieIesrHp7aeIqs6sJYLCP.SowiEO3LVq6LC # 1234
+    roles: ROLE_USER,ROLE_ADMIN
+  jwt:
+    token:
+      name: token
+      type: JWT
+      secret: UU1xNc9IIbQM1f0CMT3wHgat7rZwyDO1rqcJpxwbctw=
+      issuer: me
+      expiry-seconds: 60

@@ -47,26 +47,26 @@ import com.personalproject.homepage.service.CategoryService;
 @ActiveProfiles("test")
 public class CategoryRestControllerTest {
 
-    private final String ROOT = "/api/categories";
-    private final String JSON_CONTENT_TYPE = "application/json;charset=utf8";
-    private final String QUERY_STRING_LVL = "lvl";
-    private final String QUERY_STRING_NAME = "name";
+    private static final String ROOT = "/api/categories";
+    private static final String JSON_CONTENT_TYPE = "application/json;charset=utf8";
+    private static final String QUERY_STRING_LVL = "lvl";
+    private static final String QUERY_STRING_NAME = "name";
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final CategoryDto testTopLevelCategory = CategoryDto.builder().name("name").build();
-    private final CategoryDto testSubCategory = CategoryDto.builder().name("name").parent("parent").build();
-    private final List<CategoryDto> allCategoryTestList = List.of(
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final CategoryDto testTopLevelCategory = CategoryDto.builder().name("name").build();
+    private static final CategoryDto testSubCategory = CategoryDto.builder().name("name").parent("parent").build();
+    private static final List<CategoryDto> allCategoryTestList = List.of(
         CategoryDto.builder().name("p1").build(),
         CategoryDto.builder().name("p1").parent("p1").build(),
         CategoryDto.builder().name("c1").parent("p1").build(),
         CategoryDto.builder().name("c2").parent("p1").build()
     );
-    private final List<CategoryDto> topCategoryTestList = List.of(
+    private static final List<CategoryDto> topCategoryTestList = List.of(
         CategoryDto.builder().name("p1").build(),
         CategoryDto.builder().name("p2").build(),
         CategoryDto.builder().name("p3").build()
     );
-    private final List<CategoryDto> subCategoryTestList = List.of(
+    private static final List<CategoryDto> subCategoryTestList = List.of(
         CategoryDto.builder().name("c1").parent("p1").build(),
         CategoryDto.builder().name("c2").parent("p1").build(),
         CategoryDto.builder().name("c3").parent("p1").build()

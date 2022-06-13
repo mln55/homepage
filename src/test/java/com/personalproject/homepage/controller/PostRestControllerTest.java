@@ -52,32 +52,32 @@ import com.personalproject.homepage.service.PostService;
 @ActiveProfiles("test")
 public class PostRestControllerTest {
 
-    private final String ROOT = "/api/posts";
-    private final String JSON_CONTENT_TYPE = "application/json;charset=utf8";
-    private final String QUERY_STRING_CNAME = "cName";
-    private final String QUERY_STRING_CPARENT = "cParent";
-    private final String QUERY_STRING_VISIBLE = "visible";
+    private static final String ROOT = "/api/posts";
+    private static final String JSON_CONTENT_TYPE = "application/json;charset=utf8";
+    private static final String QUERY_STRING_CNAME = "cName";
+    private static final String QUERY_STRING_CPARENT = "cParent";
+    private static final String QUERY_STRING_VISIBLE = "visible";
 
-    private final int testSize = 8;
+    private static final int TEST_SIZE = 8;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final CategoryDto testCategory = CategoryDto.builder().name("name").build();
-    private final List<PostDto> testPostList = LongStream.rangeClosed(1, testSize)
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final CategoryDto testCategory = CategoryDto.builder().name("name").build();
+    private static final List<PostDto> testPostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).build())
         .collect(Collectors.toList());
-    private final List<PostDto> testVisiblePostList = LongStream.rangeClosed(1, testSize)
+    private static final List<PostDto> testVisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).visible(true).build())
         .collect(Collectors.toList());
-    private final List<PostDto> testInvisiblePostList = LongStream.rangeClosed(1, testSize)
+    private static final List<PostDto> testInvisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).visible(false).build())
         .collect(Collectors.toList());
-    private final List<PostDto> testCategoryPostList = LongStream.rangeClosed(1, testSize)
+    private static final List<PostDto> testCategoryPostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).category(testCategory).build())
         .collect(Collectors.toList());
-    private final List<PostDto> testCategoryVisiblePostList = LongStream.rangeClosed(1, testSize)
+    private static final List<PostDto> testCategoryVisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(true).build())
         .collect(Collectors.toList());
-    private final List<PostDto> testCategoryInvisiblePostList = LongStream.rangeClosed(1, testSize)
+    private static final List<PostDto> testCategoryInvisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(false).build())
         .collect(Collectors.toList());
 
@@ -107,7 +107,7 @@ public class PostRestControllerTest {
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", lessThanOrEqualTo(testSize)),
+                jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty()))
             ));
         }
@@ -133,7 +133,7 @@ public class PostRestControllerTest {
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", lessThanOrEqualTo(testSize)),
+                jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
                 jsonPath("$.response[?(@.visible != true)]", is(empty()))
             ));
@@ -160,7 +160,7 @@ public class PostRestControllerTest {
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", lessThanOrEqualTo(testSize)),
+                jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
                 jsonPath("$.response[?(@.visible != false)]", is(empty()))
             ));
@@ -188,7 +188,7 @@ public class PostRestControllerTest {
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", lessThanOrEqualTo(testSize)),
+                jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
                 jsonPath("$.response[?(@.category.name == null)]", is(empty()))
             ));
@@ -217,7 +217,7 @@ public class PostRestControllerTest {
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", lessThanOrEqualTo(testSize)),
+                jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
                 jsonPath("$.response[?(@.category.name == null)]", is(empty())),
                 jsonPath("$.response[?(@.visible != true)]", is(empty()))
@@ -247,7 +247,7 @@ public class PostRestControllerTest {
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", lessThanOrEqualTo(testSize)),
+                jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
                 jsonPath("$.response[?(@.category.name == null)]", is(empty())),
                 jsonPath("$.response[?(@.visible != false)]", is(empty()))

@@ -29,14 +29,14 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class PostRepositoryTest {
 
+    private final static int TEST_PAGE = 0;
+    private final static int TEST_SIZE = 8;
+    private final static Sort testSort = Sort.by(Direction.DESC, "createAt");
+    private final static Pageable testPageable = PageRequest.of(TEST_PAGE, TEST_SIZE, testSort);
+    private final static Comparator<Post> createAtDescComp = (p1, p2) -> p1.getCreateAt().isAfter(p2.getCreateAt()) ? -1 : 1;
+
     private final PostRepository postRepository;
     private final CategoryRepository categoryRepository;
-
-    private final int testPage = 0;
-    private final int testSize = 8;
-    private final Sort testSort = Sort.by(Direction.DESC, "createAt");
-    private final Pageable testPageable = PageRequest.of(testPage, testSize, testSort);
-    private final Comparator<Post> createAtDescComp = (p1, p2) -> p1.getCreateAt().isAfter(p2.getCreateAt()) ? -1 : 1;
 
     private Category savedParentCategory;
     private Category savedChildCategory;
@@ -145,9 +145,9 @@ public class PostRepositoryTest {
             // then
             assertThat(postList)
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, testSize)
+                .hasSizeBetween(0, TEST_SIZE)
                 .size()
-                .isEqualTo(testSize);
+                .isEqualTo(TEST_SIZE);
         }
 
         @Test
@@ -170,7 +170,7 @@ public class PostRepositoryTest {
             assertThat(postList)
                 .allMatch(p -> p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, testSize)
+                .hasSizeBetween(0, TEST_SIZE)
                 .size()
                 .isEqualTo(6);
         }
@@ -195,7 +195,7 @@ public class PostRepositoryTest {
             assertThat(postList)
                 .allMatch(p -> !p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, testSize)
+                .hasSizeBetween(0, TEST_SIZE)
                 .size()
                 .isEqualTo(5);
         }
@@ -220,9 +220,9 @@ public class PostRepositoryTest {
             assertThat(postList)
                 .allMatch(p -> p.getCategory().getName().equals(savedParentCategory.getName()))
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, testSize)
+                .hasSizeBetween(0, TEST_SIZE)
                 .size()
-                .isEqualTo(testSize);
+                .isEqualTo(TEST_SIZE);
         }
 
         @Test
@@ -245,7 +245,7 @@ public class PostRepositoryTest {
             assertThat(postList)
                 .allMatch(p -> p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, testSize)
+                .hasSizeBetween(0, TEST_SIZE)
                 .size()
                 .isEqualTo(5);
         }
@@ -270,7 +270,7 @@ public class PostRepositoryTest {
             assertThat(postList)
                 .allMatch(p -> !p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, testSize)
+                .hasSizeBetween(0, TEST_SIZE)
                 .size()
                 .isEqualTo(5);
         }

@@ -25,13 +25,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.personalproject.homepage.dto.CategoryDto;
-import com.personalproject.homepage.dto.PostDto;
-import com.personalproject.homepage.error.ApiException;
-import com.personalproject.homepage.error.ErrorMessage;
-import com.personalproject.homepage.service.PostService;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,11 +33,22 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.personalproject.homepage.config.CustomUnitTestSecurityConfig;
+import com.personalproject.homepage.dto.CategoryDto;
+import com.personalproject.homepage.dto.PostDto;
+import com.personalproject.homepage.error.ApiException;
+import com.personalproject.homepage.error.ErrorMessage;
+import com.personalproject.homepage.service.PostService;
+
 @WebMvcTest(PostRestController.class)
+@CustomUnitTestSecurityConfig
+@WithMockUser(roles = "ADMIN")
 @ActiveProfiles("test")
 public class PostRestControllerTest {
 

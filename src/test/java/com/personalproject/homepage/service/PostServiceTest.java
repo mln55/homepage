@@ -39,10 +39,10 @@ import org.springframework.test.context.ActiveProfiles;
 @ActiveProfiles("test")
 public class PostServiceTest {
 
-    private final int testPage = 0;
-    private final int testSize = 8;
-    private final Sort testSort = Sort.by(Direction.DESC, "createAt");
-    private final Pageable testPageable = PageRequest.of(testPage, testSize, testSort);
+    private static final int TEST_PAGE = 0;
+    private static final int TEST_SIZE = 8;
+    private static final Sort testSort = Sort.by(Direction.DESC, "createAt");
+    private static final Pageable testPageable = PageRequest.of(TEST_PAGE, TEST_SIZE, testSort);
 
     @Mock private PostRepository postRepository;
     @Mock private CategoryMapper categoryMapper;
@@ -173,7 +173,7 @@ public class PostServiceTest {
             verify(postRepository).findAll(testPageable);
             assertThat(returnDtoList)
                 .size()
-                .isBetween(0, testSize);
+                .isBetween(0, TEST_SIZE);
         }
 
         @Test
@@ -199,7 +199,7 @@ public class PostServiceTest {
             assertThat(returnDtoList)
                 .allMatch(p -> p.getCategory().getName().equals(name))
                 .size()
-                .isBetween(0, testSize);
+                .isBetween(0, TEST_SIZE);
         }
 
         @Test
@@ -238,7 +238,7 @@ public class PostServiceTest {
             assertThat(returnDtoList)
                 .allMatch(p -> p.getVisible())
                 .size()
-                .isBetween(0, testSize);
+                .isBetween(0, TEST_SIZE);
         }
 
         @Test
@@ -262,7 +262,7 @@ public class PostServiceTest {
             assertThat(returnDtoList)
                 .allMatch(p -> p.getVisible() && p.getCategory().getName().equals(name))
                 .size()
-                .isBetween(0, testSize);
+                .isBetween(0, TEST_SIZE);
         }
 
         @Test
@@ -302,7 +302,7 @@ public class PostServiceTest {
             assertThat(returnDtoList)
                 .allMatch(p -> !p.getVisible())
                 .size()
-                .isBetween(0, testSize);
+                .isBetween(0, TEST_SIZE);
         }
 
         @Test
@@ -327,7 +327,7 @@ public class PostServiceTest {
             assertThat(returnDtoList)
                 .allMatch(p -> !p.getVisible() && p.getCategory().getName().equals(name))
                 .size()
-                .isBetween(0, testSize);
+                .isBetween(0, TEST_SIZE);
         }
 
         @Test

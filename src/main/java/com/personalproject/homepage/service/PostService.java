@@ -11,10 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.dto.PostDto;
+import com.personalproject.homepage.dto.PostsCountByCategoryDto;
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
-import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.error.ApiException;
+import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.mapper.CategoryMapper;
 import com.personalproject.homepage.mapper.PostMapper;
 import com.personalproject.homepage.repository.PostRepository;
@@ -89,6 +90,29 @@ public class PostService {
         ).stream()
         .map(postMapper::entityToPostDto)
         .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostsCountByCategoryDto> getPostsCountPerCategory() {
+        return postRepository.countAllGroupByCategory()
+            .stream()
+            .map(pc -> PostsCountByCategoryDto.builder()
+                .categoryDto(categoryMapper.entityToCategoryDto(pc.getCategory()))
+                .count(pc.getCount())
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<PostsCountByCategoryDto> getPostsCountByVisiblePerCategory(Boolean visible) {
+        checkArgument(visible != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
+        return postRepository.countAllByVisibleGroupByCategory(visible)
+            .stream()
+            .map(pc -> PostsCountByCategoryDto.builder()
+                .categoryDto(categoryMapper.entityToCategoryDto(pc.getCategory()))
+                .count(pc.getCount())
+                .build())
+            .collect(Collectors.toList());
     }
 
     @Transactional

@@ -11,16 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.personalproject.homepage.dto.CategoryDto;
-import com.personalproject.homepage.dto.PostDto;
-import com.personalproject.homepage.entity.Category;
-import com.personalproject.homepage.entity.Post;
-import com.personalproject.homepage.error.ErrorMessage;
-import com.personalproject.homepage.helper.MockEntity;
-import com.personalproject.homepage.mapper.CategoryMapper;
-import com.personalproject.homepage.mapper.PostMapper;
-import com.personalproject.homepage.repository.PostRepository;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,6 +24,18 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.personalproject.homepage.dto.CategoryDto;
+import com.personalproject.homepage.dto.PostDto;
+import com.personalproject.homepage.dto.PostsCountByCategoryDto;
+import com.personalproject.homepage.entity.Category;
+import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.entity.groupby.PostsCountByCategory;
+import com.personalproject.homepage.error.ErrorMessage;
+import com.personalproject.homepage.helper.MockEntity;
+import com.personalproject.homepage.mapper.CategoryMapper;
+import com.personalproject.homepage.mapper.PostMapper;
+import com.personalproject.homepage.repository.PostRepository;
 
 @ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
@@ -348,6 +350,110 @@ public class PostServiceTest {
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
                 .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
+        }
+
+        @Test
+        @DisplayName("성공: 카테고리별 포스트 개수를 dto list로 반환한다.")
+        void Success_PostsCountPerCategory_ReturnDtoList() {
+            // given - testCategoryEntity
+            Category newCategoryEntity = MockEntity.mock(Category.class);
+            newCategoryEntity.updateInfo("newCategory", null);
+            CategoryDto categoryDto = CategoryDto.builder().name(testCategoryEntity.getName()).build();
+            CategoryDto newCategoryDto = CategoryDto.builder().name(newCategoryEntity.getName()).build();
+            given(postRepository.countAllGroupByCategory()).willReturn(List.of(
+                new PostsCountByCategory(testCategoryEntity, 2l),
+                new PostsCountByCategory(newCategoryEntity, 4l)
+            ));
+            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(categoryDto);
+            given(categoryMapper.entityToCategoryDto(newCategoryEntity)).willReturn(newCategoryDto);
+
+            // when
+            List<PostsCountByCategoryDto> postsCountList = postService.getPostsCountPerCategory();
+
+            // then
+            verify(postRepository).countAllGroupByCategory();
+            verify(categoryMapper).entityToCategoryDto(testCategoryEntity);
+            verify(categoryMapper).entityToCategoryDto(newCategoryEntity);
+            assertThat(postsCountList).size().isEqualTo(2);
+            assertThat(postsCountList)
+                .extracting("category")
+                .doesNotHaveDuplicates();
+            assertThat(postsCountList)
+                .allMatch(pc ->
+                    pc.getCategory() != null && pc.getCount() != null &&
+                    (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
+                    (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
+                );
+        }
+
+        @Test
+        @DisplayName("성공: 카테고리별 visible == true인 포스트 개수를 dto list로 반환한다.")
+        void Success_VisiblePostsCountPerCategory_ReturnDtoList() {
+            // given - testCategoryEntity
+            Boolean visible = true;
+            Category newCategoryEntity = MockEntity.mock(Category.class);
+            newCategoryEntity.updateInfo("newCategory", null);
+            CategoryDto categoryDto = CategoryDto.builder().name(testCategoryEntity.getName()).build();
+            CategoryDto newCategoryDto = CategoryDto.builder().name(newCategoryEntity.getName()).build();
+            given(postRepository.countAllByVisibleGroupByCategory(visible)).willReturn(List.of(
+                new PostsCountByCategory(testCategoryEntity, 2l),
+                new PostsCountByCategory(newCategoryEntity, 4l)
+            ));
+            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(categoryDto);
+            given(categoryMapper.entityToCategoryDto(newCategoryEntity)).willReturn(newCategoryDto);
+
+            // when
+            List<PostsCountByCategoryDto> postsCountList = postService.getPostsCountByVisiblePerCategory(visible);
+
+            // then
+            verify(postRepository).countAllByVisibleGroupByCategory(visible);
+            verify(categoryMapper).entityToCategoryDto(testCategoryEntity);
+            verify(categoryMapper).entityToCategoryDto(newCategoryEntity);
+            assertThat(postsCountList).size().isEqualTo(2);
+            assertThat(postsCountList)
+                .extracting("category")
+                .doesNotHaveDuplicates();
+            assertThat(postsCountList)
+                .allMatch(pc ->
+                    pc.getCategory() != null && pc.getCount() != null &&
+                    (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
+                    (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
+                );
+        }
+
+        @Test
+        @DisplayName("성공: 카테고리별 visible == false인 포스트 개수를 dto list로 반환한다.")
+        void Success_InvisiblePostsCountPerCategory_ReturnDtoList() {
+            // given - testCategoryEntity
+            Boolean visible = false;
+            Category newCategoryEntity = MockEntity.mock(Category.class);
+            newCategoryEntity.updateInfo("newCategory", null);
+            CategoryDto categoryDto = CategoryDto.builder().name(testCategoryEntity.getName()).build();
+            CategoryDto newCategoryDto = CategoryDto.builder().name(newCategoryEntity.getName()).build();
+            given(postRepository.countAllByVisibleGroupByCategory(visible)).willReturn(List.of(
+                new PostsCountByCategory(testCategoryEntity, 2l),
+                new PostsCountByCategory(newCategoryEntity, 4l)
+            ));
+            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(categoryDto);
+            given(categoryMapper.entityToCategoryDto(newCategoryEntity)).willReturn(newCategoryDto);
+
+            // when
+            List<PostsCountByCategoryDto> postsCountList = postService.getPostsCountByVisiblePerCategory(visible);
+
+            // then
+            verify(postRepository).countAllByVisibleGroupByCategory(visible);
+            verify(categoryMapper).entityToCategoryDto(testCategoryEntity);
+            verify(categoryMapper).entityToCategoryDto(newCategoryEntity);
+            assertThat(postsCountList).size().isEqualTo(2);
+            assertThat(postsCountList)
+                .extracting("category")
+                .doesNotHaveDuplicates();
+            assertThat(postsCountList)
+                .allMatch(pc ->
+                    pc.getCategory() != null && pc.getCount() != null &&
+                    (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
+                    (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
+                );
         }
     }
 

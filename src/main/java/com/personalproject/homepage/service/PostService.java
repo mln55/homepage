@@ -71,10 +71,8 @@ public class PostService {
 
     public List<PostDto> getPostsByVisible(Boolean visible, Pageable pageable) {
         checkArgument(visible != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
-        return (visible
-            ? postRepository.findAllByVisibleTrue(pageable)
-            : postRepository.findAllByVisibleFalse(pageable)
-        ).stream()
+        return postRepository.findAllByVisible(visible, pageable)
+            .stream()
             .map(postMapper::entityToPostDto)
             .collect(Collectors.toList());
     }
@@ -84,12 +82,10 @@ public class PostService {
         Category categoryEntity = categoryMapper.CategoryDtoToEntity(categoryDto);
         checkArgument(categoryEntity.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
         checkArgument(visible != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
-        return (visible
-            ? postRepository.findAllByVisibleTrueAndCategory(categoryEntity, pageable)
-            : postRepository.findAllByVisibleFalseAndCategory(categoryEntity, pageable)
-        ).stream()
-        .map(postMapper::entityToPostDto)
-        .collect(Collectors.toList());
+        return postRepository.findAllByVisibleAndCategory(visible, categoryEntity, pageable)
+            .stream()
+            .map(postMapper::entityToPostDto)
+            .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)

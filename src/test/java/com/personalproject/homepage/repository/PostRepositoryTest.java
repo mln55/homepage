@@ -156,6 +156,7 @@ public class PostRepositoryTest {
         @DisplayName("성공: 페이지에 맞는 visible == true인 List<Post>를 반환한다.")
         void Success_PostsIsVisiblePerPage_ReturnPostList() {
             // given - total 11 posts but 6 are visible including savedPost
+            Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
                 p.updateInfo(null, "title" + i, "content" + i, i % 2 == 0);
@@ -166,7 +167,7 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByVisibleTrue(testPageable);
+            List<Post> postList = postRepository.findAllByVisible(visible, testPageable);
 
             // then
             assertThat(postList)
@@ -181,6 +182,7 @@ public class PostRepositoryTest {
         @DisplayName("성공: 페이지에 맞는 visible == false인 List<Post>를 반환한다.")
         void Success_PostsInvisiblePerPage_ReturnPostList() {
             // given - total 11 posts but 5 are invisible including savedPost
+            Boolean visible = false;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
                 p.updateInfo(null, "title" + i, "content" + i, i % 2 == 0);
@@ -191,7 +193,7 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByVisibleFalse(testPageable);
+            List<Post> postList = postRepository.findAllByVisible(visible, testPageable);
 
             // then
             assertThat(postList)
@@ -231,6 +233,7 @@ public class PostRepositoryTest {
         @DisplayName("성공: 카테고리, 페이지에 맞는 visible == true인 List<Post>를 반환한다.")
         void Success_PostsIsVisibleByCategoryPerPage_ReturnPostList() {
             // given - total 10 posts but 5 are visible in savedChildCategory
+            Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
                 p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
@@ -241,7 +244,7 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByVisibleTrueAndCategory(savedChildCategory, testPageable);
+            List<Post> postList = postRepository.findAllByVisibleAndCategory(visible, savedChildCategory, testPageable);
 
             // then
             assertThat(postList)
@@ -256,6 +259,7 @@ public class PostRepositoryTest {
         @DisplayName("성공: 카테고리, 페이지에 맞는 visible == false인 List<Post>를 반환한다.")
         void Success_PostsIsInvisibleByCategoryPerPage_ReturnPostList() {
             // given - total 10 posts but 5 are invisible in savedChildCategory
+            Boolean visible = false;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
                 p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
@@ -266,7 +270,7 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByVisibleFalseAndCategory(savedChildCategory, testPageable);
+            List<Post> postList = postRepository.findAllByVisibleAndCategory(visible, savedChildCategory, testPageable);
 
             // then
             assertThat(postList)

@@ -230,13 +230,14 @@ public class PostServiceTest {
             // given - testPostEntity
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
-            given(postRepository.findAllByVisibleTrue(testPageable)).willReturn(postEntityList);
+            Boolean visible = true;
+            given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
 
             // when
             List<PostDto> returnDtoList = postService.getPostsByVisible(true, testPageable);
 
             // then
-            verify(postRepository).findAllByVisibleTrue(testPageable);
+            verify(postRepository).findAllByVisible(visible, testPageable);
             assertThat(returnDtoList)
                 .allMatch(p -> p.getVisible())
                 .size()
@@ -251,15 +252,16 @@ public class PostServiceTest {
             String name = category.getName();
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
+            Boolean visible = true;
 
-            given(postRepository.findAllByVisibleTrue(testPageable)).willReturn(postEntityList);
+            given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
             given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).build());
 
             // when
             List<PostDto> returnDtoList = postService.getPostsByVisible(true, testPageable);
 
             // then
-            verify(postRepository).findAllByVisibleTrue(testPageable);
+            verify(postRepository).findAllByVisible(visible, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
             assertThat(returnDtoList)
                 .allMatch(p -> p.getVisible() && p.getCategory().getName().equals(name))
@@ -294,13 +296,14 @@ public class PostServiceTest {
             testPostEntity.updateInfo(null, null, null, false);
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
-            given(postRepository.findAllByVisibleFalse(testPageable)).willReturn(postEntityList);
+            Boolean visible = false;
+            given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
 
             // when
             List<PostDto> returnDtoList = postService.getPostsByVisible(false, testPageable);
 
             // then
-            verify(postRepository).findAllByVisibleFalse(testPageable);
+            verify(postRepository).findAllByVisible(visible, testPageable);
             assertThat(returnDtoList)
                 .allMatch(p -> !p.getVisible())
                 .size()
@@ -316,15 +319,16 @@ public class PostServiceTest {
             testPostEntity.updateInfo(category, null, null, false);
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
+            Boolean visible = false;
 
-            given(postRepository.findAllByVisibleFalse(testPageable)).willReturn(postEntityList);
+            given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
             given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).build());
 
             // when
             List<PostDto> returnDtoList = postService.getPostsByVisible(false, testPageable);
 
             // then
-            verify(postRepository).findAllByVisibleFalse(testPageable);
+            verify(postRepository).findAllByVisible(visible, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
             assertThat(returnDtoList)
                 .allMatch(p -> !p.getVisible() && p.getCategory().getName().equals(name))

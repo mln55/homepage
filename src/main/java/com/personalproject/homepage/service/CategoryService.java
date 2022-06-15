@@ -5,14 +5,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.entity.Category;
+import com.personalproject.homepage.error.ApiException;
 import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.mapper.CategoryMapper;
 import com.personalproject.homepage.repository.CategoryRepository;
-
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import lombok.RequiredArgsConstructor;
 
@@ -70,6 +71,10 @@ public class CategoryService {
 
         Category entityBefore = categoryMapper.CategoryDtoToEntity(before);
         checkArgument(entityBefore.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
+
+        if (entityBefore.getPostsOfCategory().size() != 0 && after.getParent() == null) {
+            throw new ApiException(ErrorMessage.NOT_CHANGE_TO_TOPLEVEL_CATEGORY);
+        }
 
         boolean updatable = (afterName != null && !afterName.equals(beforeName))
             || (beforeParentName != null && !beforeParentName.equals(afterParentName))

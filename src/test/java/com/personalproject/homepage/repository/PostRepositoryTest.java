@@ -42,6 +42,7 @@ public class PostRepositoryTest {
 
     private Category savedParentCategory;
     private Category savedChildCategory;
+    private Category savedChildCategory2;
     private Post savedPost;
 
     @Autowired
@@ -63,8 +64,12 @@ public class PostRepositoryTest {
         savedChildCategory.updateInfo("child", savedParentCategory);
         categoryRepository.save(savedChildCategory);
 
+        savedChildCategory2 = MockEntity.mock(Category.class);
+        savedChildCategory2.updateInfo("child2", savedParentCategory);
+        categoryRepository.save(savedChildCategory2);
+
         savedPost = MockEntity.mock(Post.class);
-        savedPost.updateInfo(savedParentCategory, "title", "content", true);
+        savedPost.updateInfo(savedChildCategory, "title", "content", true);
         postRepository.save(savedPost);
     }
 
@@ -72,26 +77,7 @@ public class PostRepositoryTest {
     @DisplayName("Create")
     class Test_Create_Post {
         @Test
-        @DisplayName("성공: 카테고리가 없는 포스트를 추가한다.")
-        void Success_PostWithNoCategory_Create() {
-            // given
-            Post post = MockEntity.mock(Post.class);
-            post.updateInfo(null, "title", "content", true);
-
-            // when
-            Post savedPost = postRepository.save(post);
-
-            // then
-            assertThat(savedPost)
-                .extracting("idx")
-                .isNotNull();
-            assertThat(savedPost)
-                .extracting("category")
-                .isNull();
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리가 있는 포스트를 추가한다.")
+        @DisplayName("성공: 포스트를 추가한다.")
         void Success_PostWithCategory_Create() {
             // given - savedChildCategory
             Post post = MockEntity.mock(Post.class);
@@ -107,8 +93,8 @@ public class PostRepositoryTest {
             assertThat(newPost)
                 .extracting("category")
                 .isNotNull()
-                .extracting("name")
-                .isEqualTo(savedChildCategory.getName());
+                .extracting("name", "parentCategory.name")
+                .containsExactly(savedChildCategory.getName(), savedParentCategory.getName());
         }
     }
 
@@ -134,7 +120,7 @@ public class PostRepositoryTest {
             // given - total 11 posts including savedPost
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(null, "title" + i, "content" + i, true);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -210,7 +196,7 @@ public class PostRepositoryTest {
             // given - total 11 posts including savedPost in same category
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedParentCategory, "title" + i, "content" + i, true);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -218,11 +204,11 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByCategory(savedParentCategory, testPageable);
+            List<Post> postList = postRepository.findAllByCategory(savedChildCategory, testPageable);
 
             // then
             assertThat(postList)
-                .allMatch(p -> p.getCategory().getName().equals(savedParentCategory.getName()))
+                .allMatch(p -> p.getCategory().equals(savedChildCategory))
                 .isSortedAccordingTo(createAtDescComp)
                 .hasSizeBetween(0, TEST_SIZE)
                 .size()
@@ -232,7 +218,7 @@ public class PostRepositoryTest {
         @Test
         @DisplayName("성공: 카테고리, 페이지에 맞는 visible == true인 List<Post>를 반환한다.")
         void Success_PostsIsVisibleByCategoryPerPage_ReturnPostList() {
-            // given - total 10 posts but 5 are visible in savedChildCategory
+            // given - total 10 posts but 6 are visible in savedChildCategory
             Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
@@ -248,11 +234,11 @@ public class PostRepositoryTest {
 
             // then
             assertThat(postList)
-                .allMatch(p -> p.getVisible())
+                .allMatch(p -> p.getCategory().equals(savedChildCategory) && p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
                 .hasSizeBetween(0, TEST_SIZE)
                 .size()
-                .isEqualTo(5);
+                .isEqualTo(6);
         }
 
         @Test
@@ -274,7 +260,7 @@ public class PostRepositoryTest {
 
             // then
             assertThat(postList)
-                .allMatch(p -> !p.getVisible())
+                .allMatch(p -> p.getCategory().equals(savedChildCategory) && !p.getVisible())
                 .isSortedAccordingTo(createAtDescComp)
                 .hasSizeBetween(0, TEST_SIZE)
                 .size()
@@ -284,13 +270,13 @@ public class PostRepositoryTest {
         @Test
         @DisplayName("성공: 카테고리별 포스트 개수를 반환한다.")
         void Success_CountPostsPerCategory_ReturnObjectList() {
-            // given - savedParentCategory, savedChildCategory
+            // given - savedChildCategory, savedChildCategory2
             // 6 posts in first, 5 in second
             Boolean visible = false;
             IntStream.rangeClosed(1, 10)
                 .forEach(i -> {
                     Post p = MockEntity.mock(Post.class);
-                    p.updateInfo(i % 2 == 1 ? savedParentCategory : savedChildCategory,
+                    p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
                         "title", "content", visible);
                     postRepository.save(p);
                 });
@@ -305,21 +291,21 @@ public class PostRepositoryTest {
                 .doesNotHaveDuplicates();
             assertThat(postCountList).allMatch(pc ->
                 pc.getCategory() != null && pc.getCount() != null &&
-                (pc.getCategory().equals(savedParentCategory) && pc.getCount() == 6) ||
-                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 5)
+                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 6) ||
+                (pc.getCategory().equals(savedChildCategory2) && pc.getCount() == 5)
             );
         }
 
         @Test
         @DisplayName("성공: 카테고리별 visible == true인 포스트 개수를 반환한다.")
         void Success_CountVisiblePostsPerCategory_ReturnObjectList() {
-            // given - savedParentCategory, savedChildCategory
+            // given - savedChildCategory, savedChildCategory2
             // 6 visible posts in first, 5 in second
             Boolean visible = true;
             IntStream.rangeClosed(1, 10)
                 .forEach(i -> {
                     Post p = MockEntity.mock(Post.class);
-                    p.updateInfo(i % 2 == 1 ? savedParentCategory : savedChildCategory,
+                    p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
                         "title", "content", visible);
                     postRepository.save(p);
                 });
@@ -334,21 +320,21 @@ public class PostRepositoryTest {
                 .doesNotHaveDuplicates();
             assertThat(postCountList).allMatch(pc ->
                 pc.getCategory() != null && pc.getCount() != null &&
-                (pc.getCategory().equals(savedParentCategory) && pc.getCount() == 6) ||
-                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 5)
+                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 6) ||
+                (pc.getCategory().equals(savedChildCategory2) && pc.getCount() == 5)
             );
         }
 
         @Test
         @DisplayName("성공: 카테고리별 visible == false인 포스트 개수를 반환한다.")
         void Success_CountInVisiblePostsPerCategory_ReturnObjectList() {
-            // given - savedParentCategory, savedChildCategory
+            // given - savedChildCategory, savedChildCategory2
             // 5 invisible posts in both
             Boolean visible = false;
             IntStream.rangeClosed(1, 10)
                 .forEach(i -> {
                     Post p = MockEntity.mock(Post.class);
-                    p.updateInfo(i % 2 == 1 ? savedParentCategory : savedChildCategory,
+                    p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
                         "title", "content", visible);
                     postRepository.save(p);
                 });
@@ -363,13 +349,11 @@ public class PostRepositoryTest {
                 .doesNotHaveDuplicates();
             assertThat(postCountList).allMatch(pc ->
                 pc.getCategory() != null && pc.getCount() != null &&
-                (pc.getCategory().equals(savedParentCategory) && pc.getCount() == 5) ||
-                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 5)
+                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 5) ||
+                (pc.getCategory().equals(savedChildCategory2) && pc.getCount() == 5)
             );
         }
     }
-
-
 
     @Nested
     @DisplayName("Update")
@@ -377,13 +361,13 @@ public class PostRepositoryTest {
         @Test
         @DisplayName("성공: 포스트 내용을 변경한다.")
         void Success_PostDetail_Update() {
-            // given - savedPost, savedChildCategory
+            // given - savedPost, savedChildCategory2
             String title = "changed";
             String content = "changed";
             boolean visible = false;
 
             // when
-            savedPost.updateInfo(savedChildCategory, title, content, visible);
+            savedPost.updateInfo(savedChildCategory2, title, content, visible);
 
             Post updatedPost = postRepository.findById(savedPost.getIdx()).orElseThrow();
 
@@ -394,8 +378,8 @@ public class PostRepositoryTest {
             ********************************************************************************/
             // then
             assertThat(updatedPost)
-                .extracting("title", "content", "visible", "category.name")
-                .containsExactly(title, content, visible, savedChildCategory.getName());
+                .extracting("title", "content", "visible", "category.name", "category.parentCategory.name")
+                .containsExactly(title, content, visible, savedChildCategory2.getName(), savedParentCategory.getName());
             assertThat(updatedPost)
                 .extracting("updateAt")
                 .isNull();

@@ -61,23 +61,14 @@ public class PostRestControllerTest {
     private static final int TEST_SIZE = 8;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final CategoryDto testCategory = CategoryDto.builder().name("name").build();
+    private static final CategoryDto testCategory = CategoryDto.builder().name("name").parent("parent").build();
     private static final List<PostDto> testPostList = LongStream.rangeClosed(1, TEST_SIZE)
-        .mapToObj(id -> PostDto.builder().id(id).build())
+        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(id % 2 == 0).build())
         .collect(Collectors.toList());
     private static final List<PostDto> testVisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
-        .mapToObj(id -> PostDto.builder().id(id).visible(true).build())
-        .collect(Collectors.toList());
-    private static final List<PostDto> testInvisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
-        .mapToObj(id -> PostDto.builder().id(id).visible(false).build())
-        .collect(Collectors.toList());
-    private static final List<PostDto> testCategoryPostList = LongStream.rangeClosed(1, TEST_SIZE)
-        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).build())
-        .collect(Collectors.toList());
-    private static final List<PostDto> testCategoryVisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(true).build())
         .collect(Collectors.toList());
-    private static final List<PostDto> testCategoryInvisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
+    private static final List<PostDto> testInvisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
         .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(false).build())
         .collect(Collectors.toList());
 
@@ -116,7 +107,9 @@ public class PostRestControllerTest {
         @DisplayName("성공: 페이지에 맞는 visible == ture인 포스트를 반환한다.")
         void Success_GetVisiblePosts_ReturnApiResultOfDtoList() throws Exception {
             // given
-            given(postService.getPostsByVisible(anyBoolean(), any(Pageable.class))).willReturn(testVisiblePostList);
+            given(postService.getPostsByVisible(
+                anyBoolean(), any(Pageable.class)
+            )).willReturn(testVisiblePostList);
 
             // when
             ResultActions result = mockMvc.perform(get(ROOT)
@@ -143,7 +136,9 @@ public class PostRestControllerTest {
         @DisplayName("성공: 페이지에 맞는 visible == false인 포스트를 반환한다.")
         void Success_GetInvisiblePosts_ReturnApiResultOfDtoList() throws Exception {
             // given
-            given(postService.getPostsByVisible(anyBoolean(), any(Pageable.class))).willReturn(testInvisiblePostList);
+            given(postService.getPostsByVisible(
+                anyBoolean(), any(Pageable.class)
+            )).willReturn(testInvisiblePostList);
 
             // when
             ResultActions result = mockMvc.perform(get(ROOT)
@@ -170,7 +165,9 @@ public class PostRestControllerTest {
         @DisplayName("성공: 페이지, 카테고리에 맞는 포스트를 반환한다.")
         void Success_GetPostsByCategory_ReturnApiResultOfDtoList() throws Exception {
             // given
-            given(postService.getPostsByCategory(any(CategoryDto.class), any(Pageable.class))).willReturn(testCategoryPostList);
+            given(postService.getPostsByCategory(
+                any(CategoryDto.class), any(Pageable.class)
+            )).willReturn(testPostList);
 
             // when
             ResultActions result = mockMvc.perform(get(ROOT)
@@ -190,7 +187,8 @@ public class PostRestControllerTest {
                 jsonPath("$.response", is(not(empty()))),
                 jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
-                jsonPath("$.response[?(@.category.name == null)]", is(empty()))
+                jsonPath("$.response[?(@.category.name == null)]", is(empty())),
+                jsonPath("$.response[?(@.category.parent == null)]", is(empty()))
             ));
         }
 
@@ -198,7 +196,9 @@ public class PostRestControllerTest {
         @DisplayName("성공: 페이지, 카테고리에 맞는 visible == true인 포스트를 반환한다.")
         void Success_GetVisiblePostsByCategory_ReturnApiResultOfDtoList() throws Exception {
             // given
-            given(postService.getPostsByVisibleAndCategory(anyBoolean(), any(CategoryDto.class), any(Pageable.class))).willReturn(testCategoryVisiblePostList);
+            given(postService.getPostsByVisibleAndCategory(
+                anyBoolean(), any(CategoryDto.class), any(Pageable.class)
+            )).willReturn(testVisiblePostList);
 
             // when
             ResultActions result = mockMvc.perform(get(ROOT)
@@ -208,7 +208,9 @@ public class PostRestControllerTest {
             );
 
             // then
-            verify(postService).getPostsByVisibleAndCategory(anyBoolean(), any(CategoryDto.class), any(Pageable.class));
+            verify(postService).getPostsByVisibleAndCategory(
+                anyBoolean(), any(CategoryDto.class), any(Pageable.class)
+            );
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(PostRestController.class),
@@ -220,6 +222,7 @@ public class PostRestControllerTest {
                 jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
                 jsonPath("$.response[?(@.category.name == null)]", is(empty())),
+                jsonPath("$.response[?(@.category.parent == null)]", is(empty())),
                 jsonPath("$.response[?(@.visible != true)]", is(empty()))
             ));
         }
@@ -228,7 +231,9 @@ public class PostRestControllerTest {
         @DisplayName("성공: 페이지, 카테고리에 맞는 visible == false인 포스트를 반환한다.")
         void Success_GetInvisiblePostsByCategory_ReturnApiResultOfDtoList() throws Exception {
             // given
-            given(postService.getPostsByVisibleAndCategory(anyBoolean(), any(CategoryDto.class), any(Pageable.class))).willReturn(testCategoryInvisiblePostList);
+            given(postService.getPostsByVisibleAndCategory(
+                anyBoolean(), any(CategoryDto.class), any(Pageable.class)
+            )).willReturn(testInvisiblePostList);
 
             // when
             ResultActions result = mockMvc.perform(get(ROOT)
@@ -238,7 +243,9 @@ public class PostRestControllerTest {
             );
 
             // then
-            verify(postService).getPostsByVisibleAndCategory(anyBoolean(), any(CategoryDto.class), any(Pageable.class));
+            verify(postService).getPostsByVisibleAndCategory(
+                anyBoolean(), any(CategoryDto.class), any(Pageable.class))
+            ;
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(PostRestController.class),
@@ -250,6 +257,7 @@ public class PostRestControllerTest {
                 jsonPath("$.response.length()", lessThanOrEqualTo(TEST_SIZE)),
                 jsonPath("$.response[?(@.id == null)]", is(empty())),
                 jsonPath("$.response[?(@.category.name == null)]", is(empty())),
+                jsonPath("$.response[?(@.category.parent == null)]", is(empty())),
                 jsonPath("$.response[?(@.visible != false)]", is(empty()))
             ));
         }
@@ -292,6 +300,7 @@ public class PostRestControllerTest {
             // given
             PostDto post = PostDto.builder()
                 .id(1L)
+                .category(testCategory)
                 .title("title")
                 .content("content")
                 .visible(true)
@@ -315,6 +324,8 @@ public class PostRestControllerTest {
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(notNullValue())),
                 jsonPath("$.response.id", is((int) post.getId().longValue())),
+                jsonPath("$.response.category.name", is(post.getCategory().getName())),
+                jsonPath("$.response.category.parent", is(post.getCategory().getParent())),
                 jsonPath("$.response.title", is(post.getTitle())),
                 jsonPath("$.response.content", is(post.getContent())),
                 jsonPath("$.response.visible", is(post.getVisible()))
@@ -331,6 +342,7 @@ public class PostRestControllerTest {
             // given
             PostDto post = PostDto.builder()
                 .id(1L)
+                .category(testCategory)
                 .title("title")
                 .content("content")
                 .visible(true)
@@ -351,6 +363,8 @@ public class PostRestControllerTest {
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(notNullValue())),
                 jsonPath("$.response.id", is((int) post.getId().longValue())),
+                jsonPath("$.response.category.name", is(post.getCategory().getName())),
+                jsonPath("$.response.category.parent", is(post.getCategory().getParent())),
                 jsonPath("$.response.title", is(post.getTitle())),
                 jsonPath("$.response.content", is(post.getContent())),
                 jsonPath("$.response.visible", is(post.getVisible()))

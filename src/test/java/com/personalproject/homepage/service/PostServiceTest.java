@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -46,6 +47,8 @@ public class PostServiceTest {
     private static final Sort testSort = Sort.by(Direction.DESC, "createAt");
     private static final Pageable testPageable = PageRequest.of(TEST_PAGE, TEST_SIZE, testSort);
 
+    private static final Category testParentCategoryEntity = MockEntity.mock(Category.class, 99L);
+
     @Mock private PostRepository postRepository;
     @Mock private CategoryMapper categoryMapper;
 
@@ -54,14 +57,19 @@ public class PostServiceTest {
     private Category testCategoryEntity;
     private Post testPostEntity;
 
+    @BeforeAll
+    static void setParentCategory() {
+        testParentCategoryEntity.updateInfo("parent", null);
+    }
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         postMapper = new PostMapper(postRepository, categoryMapper);
         postService = new PostService(postRepository, postMapper, categoryMapper);
 
-        testCategoryEntity = MockEntity.mock(Category.class, 99L);
-        testCategoryEntity.updateInfo("category", null);
+        testCategoryEntity = MockEntity.mock(Category.class, 100L);
+        testCategoryEntity.updateInfo("category", testParentCategoryEntity);
         testPostEntity = MockEntity.mock(Post.class, 99L);
         testPostEntity.updateInfo(testCategoryEntity, "title", "content", true);
     }
@@ -70,32 +78,13 @@ public class PostServiceTest {
     @DisplayName("Create")
     class Test_Create_Post {
         @Test
-        @DisplayName("성공: 카테고리가 없는 포스트를 추가하고 dto를 반환한다.")
-        void Success_NewPostWithNoCategory_ReturnDto() {
-            // given - testPostEntity
-            PostDto inputDto = PostDto.builder()
-                .title("title")
-                .content("content")
-                .visible(true)
-                .build();
-            given(postRepository.save(any(Post.class))).willReturn(testPostEntity);
-
-            // when
-            PostDto createdDto = postService.createPost(inputDto);
-
-            // then
-            verify(postRepository).save(any(Post.class));
-            assertThat(createdDto)
-                .extracting("id")
-                .isNotNull();
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리가 있는 포스트를 추가하고 dto를 반환한다.")
-        void Success_NewPostWithCategory_ReturnDto() {
+        @DisplayName("성공: 포스트를 추가하고 dto를 반환한다.")
+        void Success_NewPost_ReturnDto() {
             // given - testCategoryEntity, testPostEntity
-            String categoryName = "category";
-            CategoryDto categoryDto = CategoryDto.builder().name(categoryName).build();
+            CategoryDto categoryDto = CategoryDto.builder()
+                .name(testCategoryEntity.getName())
+                .parent(testCategoryEntity.getParentCategory().getName())
+                .build();
             PostDto inputDto = PostDto.builder()
                 .category(categoryDto)
                 .title("title")
@@ -118,8 +107,33 @@ public class PostServiceTest {
                 .extracting("id")
                 .isNotNull();
             assertThat(createdDto)
-                .extracting("category.name")
-                .isEqualTo(categoryName);
+                .extracting("category.name", "category.parent")
+                .containsExactly(categoryDto.getName(), categoryDto.getParent());
+        }
+
+        @Test
+        @DisplayName("실패: 최상위 카테고리에 포스트 추가 시 예외를 던진다.")
+        void Fail_NewPostWithTopLevelCategory_ThrowException() {
+            // given - testParentCategoryEntity
+            CategoryDto categoryDto = CategoryDto.builder()
+                .name(testParentCategoryEntity.getName())
+                .build();
+            PostDto inputDto = PostDto.builder()
+                .category(categoryDto)
+                .title("title")
+                .content("content")
+                .visible(true)
+                .build();
+            given(categoryMapper.CategoryDtoToEntity(categoryDto)).willReturn(testParentCategoryEntity);
+
+            // when
+            Throwable thrown = catchThrowable(() -> postService.createPost(inputDto));
+
+            // then
+            verify(categoryMapper).CategoryDtoToEntity(categoryDto);
+            assertThat(thrown)
+                .isInstanceOf(Exception.class)
+                .hasMessage(ErrorMessage.NOT_ALLOWED_TOPLEVEL_POST.getMessage());
         }
     }
 
@@ -184,12 +198,13 @@ public class PostServiceTest {
             // given - testCategoryEntity, testPostEntity
             Category category = testCategoryEntity;
             String name = category.getName();
+            String parent = category.getParentCategory().getName();
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
-            CategoryDto inputCategoryDto = CategoryDto.builder().name(name).build();
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(name).parent(parent).build();
             given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(category);
             given(postRepository.findAllByCategory(category, testPageable)).willReturn(postEntityList);
-            given(categoryMapper.entityToCategoryDto(category)).willReturn(CategoryDto.builder().name(name).build());
+            given(categoryMapper.entityToCategoryDto(category)).willReturn(CategoryDto.builder().name(name).parent(parent).build());
 
             // when
             List<PostDto> returnDtoList = postService.getPostsByCategory(inputCategoryDto, testPageable);
@@ -199,7 +214,9 @@ public class PostServiceTest {
             verify(postRepository).findAllByCategory(category, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(category);
             assertThat(returnDtoList)
-                .allMatch(p -> p.getCategory().getName().equals(name))
+                .allSatisfy(p -> assertThat(p)
+                    .extracting("category.name" ,"category.parent")
+                    .containsExactly(name, parent))
                 .size()
                 .isBetween(0, TEST_SIZE);
         }
@@ -250,12 +267,13 @@ public class PostServiceTest {
             // given - testCategoryEntity, testPostEntity
             Category category = testCategoryEntity;
             String name = category.getName();
+            String parent = category.getParentCategory().getName();
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
             Boolean visible = true;
 
             given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
-            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).build());
+            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).parent(parent).build());
 
             // when
             List<PostDto> returnDtoList = postService.getPostsByVisible(true, testPageable);
@@ -264,7 +282,9 @@ public class PostServiceTest {
             verify(postRepository).findAllByVisible(visible, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
             assertThat(returnDtoList)
-                .allMatch(p -> p.getVisible() && p.getCategory().getName().equals(name))
+                .allSatisfy(p -> assertThat(p)
+                    .extracting("visible", "category.name", "category.parent")
+                    .containsExactly(visible, name, parent))
                 .size()
                 .isBetween(0, TEST_SIZE);
         }
@@ -316,13 +336,14 @@ public class PostServiceTest {
             // given - testCategoryEntity, testPostEntity
             Category category = testCategoryEntity;
             String name = category.getName();
+            String parent = category.getParentCategory().getName();
             testPostEntity.updateInfo(category, null, null, false);
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
             Boolean visible = false;
 
             given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
-            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).build());
+            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).parent(parent).build());
 
             // when
             List<PostDto> returnDtoList = postService.getPostsByVisible(false, testPageable);
@@ -331,7 +352,9 @@ public class PostServiceTest {
             verify(postRepository).findAllByVisible(visible, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
             assertThat(returnDtoList)
-                .allMatch(p -> !p.getVisible() && p.getCategory().getName().equals(name))
+                .allSatisfy(p -> assertThat(p)
+                    .extracting("visible", "category.name", "category.parent")
+                    .containsExactly(visible, name, parent))
                 .size()
                 .isBetween(0, TEST_SIZE);
         }
@@ -361,9 +384,15 @@ public class PostServiceTest {
         void Success_PostsCountPerCategory_ReturnDtoList() {
             // given - testCategoryEntity
             Category newCategoryEntity = MockEntity.mock(Category.class);
-            newCategoryEntity.updateInfo("newCategory", null);
-            CategoryDto categoryDto = CategoryDto.builder().name(testCategoryEntity.getName()).build();
-            CategoryDto newCategoryDto = CategoryDto.builder().name(newCategoryEntity.getName()).build();
+            newCategoryEntity.updateInfo("newCategory", testParentCategoryEntity);
+            CategoryDto categoryDto = CategoryDto.builder()
+                .name(testCategoryEntity.getName())
+                .parent(testCategoryEntity.getParentCategory().getName())
+                .build();
+            CategoryDto newCategoryDto = CategoryDto.builder()
+                .name(newCategoryEntity.getName())
+                .parent(newCategoryEntity.getParentCategory().getName())
+                .build();
             given(postRepository.countAllGroupByCategory()).willReturn(List.of(
                 new PostsCountByCategory(testCategoryEntity, 2l),
                 new PostsCountByCategory(newCategoryEntity, 4l)
@@ -385,6 +414,7 @@ public class PostServiceTest {
             assertThat(postsCountList)
                 .allMatch(pc ->
                     pc.getCategory() != null && pc.getCount() != null &&
+                    pc.getCategory().getParent().equals(testParentCategoryEntity.getName()) &&
                     (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
                     (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
                 );
@@ -396,9 +426,15 @@ public class PostServiceTest {
             // given - testCategoryEntity
             Boolean visible = true;
             Category newCategoryEntity = MockEntity.mock(Category.class);
-            newCategoryEntity.updateInfo("newCategory", null);
-            CategoryDto categoryDto = CategoryDto.builder().name(testCategoryEntity.getName()).build();
-            CategoryDto newCategoryDto = CategoryDto.builder().name(newCategoryEntity.getName()).build();
+            newCategoryEntity.updateInfo("newCategory", testParentCategoryEntity);
+            CategoryDto categoryDto = CategoryDto.builder()
+                .name(testCategoryEntity.getName())
+                .parent(testCategoryEntity.getParentCategory().getName())
+                .build();
+            CategoryDto newCategoryDto = CategoryDto.builder()
+                .name(newCategoryEntity.getName())
+                .parent(newCategoryEntity.getParentCategory().getName())
+                .build();
             given(postRepository.countAllByVisibleGroupByCategory(visible)).willReturn(List.of(
                 new PostsCountByCategory(testCategoryEntity, 2l),
                 new PostsCountByCategory(newCategoryEntity, 4l)
@@ -420,6 +456,7 @@ public class PostServiceTest {
             assertThat(postsCountList)
                 .allMatch(pc ->
                     pc.getCategory() != null && pc.getCount() != null &&
+                    pc.getCategory().getParent().equals(testParentCategoryEntity.getName()) &&
                     (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
                     (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
                 );
@@ -431,9 +468,15 @@ public class PostServiceTest {
             // given - testCategoryEntity
             Boolean visible = false;
             Category newCategoryEntity = MockEntity.mock(Category.class);
-            newCategoryEntity.updateInfo("newCategory", null);
-            CategoryDto categoryDto = CategoryDto.builder().name(testCategoryEntity.getName()).build();
-            CategoryDto newCategoryDto = CategoryDto.builder().name(newCategoryEntity.getName()).build();
+            newCategoryEntity.updateInfo("newCategory", testParentCategoryEntity);
+            CategoryDto categoryDto = CategoryDto.builder()
+                .name(testCategoryEntity.getName())
+                .parent(testCategoryEntity.getParentCategory().getName())
+                .build();
+            CategoryDto newCategoryDto = CategoryDto.builder()
+                .name(newCategoryEntity.getName())
+                .parent(newCategoryEntity.getParentCategory().getName())
+                .build();
             given(postRepository.countAllByVisibleGroupByCategory(visible)).willReturn(List.of(
                 new PostsCountByCategory(testCategoryEntity, 2l),
                 new PostsCountByCategory(newCategoryEntity, 4l)
@@ -455,6 +498,7 @@ public class PostServiceTest {
             assertThat(postsCountList)
                 .allMatch(pc ->
                     pc.getCategory() != null && pc.getCount() != null &&
+                    pc.getCategory().getParent().equals(testParentCategoryEntity.getName()) &&
                     (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
                     (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
                 );
@@ -473,8 +517,11 @@ public class PostServiceTest {
             String newContent = "newContent";
             boolean newVisible = false;
             Category newCategory = MockEntity.mock(Category.class, 1L);
-            newCategory.updateInfo(newName, null);
-            CategoryDto newCategoryDto = CategoryDto.builder().name(newName).build();
+            newCategory.updateInfo(newName, testParentCategoryEntity);
+            CategoryDto newCategoryDto = CategoryDto.builder()
+                .name(newName)
+                .parent(testParentCategoryEntity.getName())
+                .build();
             PostDto postDto = PostDto.builder()
                 .category(newCategoryDto)
                 .title(newTitle)

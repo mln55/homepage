@@ -11,14 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import com.personalproject.homepage.dto.CategoryDto;
-import com.personalproject.homepage.entity.Category;
-import com.personalproject.homepage.entity.Post;
-import com.personalproject.homepage.error.ErrorMessage;
-import com.personalproject.homepage.helper.MockEntity;
-import com.personalproject.homepage.mapper.CategoryMapper;
-import com.personalproject.homepage.repository.CategoryRepository;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,6 +20,14 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.personalproject.homepage.dto.CategoryDto;
+import com.personalproject.homepage.entity.Category;
+import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.error.ErrorMessage;
+import com.personalproject.homepage.helper.MockEntity;
+import com.personalproject.homepage.mapper.CategoryMapper;
+import com.personalproject.homepage.repository.CategoryRepository;
 
 /********************************************************************************
     https://javadoc.io/static/org.mockito/mockito-core/3.9.0/org/mockito/Mockito.html
@@ -368,6 +368,32 @@ public class CategoryServiceTest {
             assertThat(updatedDto)
                 .extracting("name", "parent")
                 .containsExactly(childName, null);
+        }
+
+        @Test
+        @DisplayName("실패: 포스트가 있는 카테고리의 부모 카테고리를 null로 변경 시 예외를 던진다.")
+        void Fail_NullParentCategoryHavingPosts_ThrowException() {
+            // given - testChildCategoryEntity
+            Category childCategory = testChildCategoryEntity;
+            String childName = childCategory.getName();
+            Category parentCategory = childCategory.getParentCategory();
+            String parentName = parentCategory.getName();
+            CategoryDto inputBeforeDto = CategoryDto.builder().name(childName).parent(parentName).build();
+            CategoryDto inputAfterDto = CategoryDto.builder().parent(null).build();
+
+            childCategory.getPostsOfCategory().add(MockEntity.mock(Post.class));
+            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
+            given(categoryRepository.findByNameAndParentCategory(childName, parentCategory)).willReturn(Optional.of(childCategory));
+
+            // when
+            Throwable thrown = catchThrowable(() -> categoryService.updateCategory(inputBeforeDto, inputAfterDto));
+
+            // then
+            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
+            verify(categoryRepository).findByNameAndParentCategory(childName, parentCategory);
+            assertThat(thrown)
+                .isInstanceOf(Exception.class)
+                .hasMessage(ErrorMessage.NOT_CHANGE_TO_TOPLEVEL_CATEGORY.getMessage());
         }
 
         @Test

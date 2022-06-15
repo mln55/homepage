@@ -13,6 +13,8 @@ public enum ErrorMessage {
     ALREADY_EXISTENT("이미 존재하는 %입니다.", HttpStatus.BAD_REQUEST),
     NO_CHANGES("수정할 변경 사항이 없습니다.", HttpStatus.BAD_REQUEST),
     NOT_REMOVEABLE_CATEGORY("카테고리에 속한 포스트가 있어 삭제할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    NOT_CHANGE_TO_TOPLEVEL_CATEGORY("카테고리에 속한 포스트가 있어 최상위 카테고리로 변경할 수 없습니다.", HttpStatus.BAD_REQUEST),
+    NOT_ALLOWED_TOPLEVEL_POST("최상위 카테고리에 포스트를 추가할 수 없습니다.", HttpStatus.BAD_REQUEST),
     EMPTY_QUERY_STRING("query string %이(가) 비어있습니다.", HttpStatus.BAD_REQUEST),
     INVALID_QUERY_STRING("%의 값이 유효하지 않습니다. 유효한 값: %", HttpStatus.BAD_REQUEST),
     INVALID_PATH_PARAM("%의 값이 유효하지 않습니다", HttpStatus.BAD_REQUEST),

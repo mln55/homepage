@@ -13,6 +13,8 @@ import com.personalproject.homepage.entity.jpql.PostsCountGroupByCategory;
 
 public interface PostRepository extends CommonRepository<Post, Long> {
 
+    // TODO - validation for creating post
+
     List<Post> findAll(Pageable pageable);
 
     List<Post> findAllByVisible(Boolean visible, Pageable pageable);

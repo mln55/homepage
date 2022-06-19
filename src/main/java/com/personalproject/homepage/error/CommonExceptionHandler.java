@@ -1,11 +1,15 @@
 package com.personalproject.homepage.error;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.NoHandlerFoundException;
+
+import com.personalproject.homepage.config.web.ViewName;
 
 /********************************************************************************
     application에서 발생한 예외를 처리한다.
@@ -26,17 +30,28 @@ public class CommonExceptionHandler {
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public Object handleNotFound(NoHandlerFoundException e) {
-        String url = e.getRequestURL();
-        if (url.startsWith("/api/")) {
+        // method != "GET" -> ResponseEntity로 응답
+        if (!e.getHttpMethod().equals("GET")) {
             return handleNotFoundApi();
+        }
+
+        // URI가 /api/ 아래면 ResponseEntity
+        if (e.getRequestURL().startsWith("/api/")) {
+            return handleNotFoundApi();
+        // 아니면 404 에러 페이지
         } else {
-            /** todo */
-            return null;
+            return handleNotFoundPage();
         }
     }
 
     public ResponseEntity<?> handleNotFoundApi() {
         ErrorMessage notFound = ErrorMessage.API_NOT_FOUND;
         return ErrorResponseEntity.response(notFound.getMessage(), notFound.getStatus());
+    }
+
+    public ModelAndView handleNotFoundPage() {
+        ModelAndView mv = new ModelAndView(ViewName.ERROR_404);
+        mv.setStatus(HttpStatus.NOT_FOUND);
+        return mv;
     }
 }

@@ -39,4 +39,4 @@ security:
       type: JWT
       secret: UU1xNc9IIbQM1f0CMT3wHgat7rZwyDO1rqcJpxwbctw=
       issuer: me
-      expiry-seconds: 60
+      expiry-seconds: 604_800 # 7d

@@ -271,15 +271,18 @@ public class PostServiceTest {
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
             Boolean visible = true;
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(name).parent(parent).build();
 
-            given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
+            given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(category);
+            given(postRepository.findAllByVisibleAndCategory(visible, category, testPageable)).willReturn(postEntityList);
             given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).parent(parent).build());
 
             // when
-            List<PostDto> returnDtoList = postService.getPostsByVisible(true, testPageable);
+            List<PostDto> returnDtoList = postService.getPostsByVisibleAndCategory(true, inputCategoryDto, testPageable);
 
             // then
-            verify(postRepository).findAllByVisible(visible, testPageable);
+            verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
+            verify(postRepository).findAllByVisibleAndCategory(visible, category, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
             assertThat(returnDtoList)
                 .allSatisfy(p -> assertThat(p)
@@ -341,15 +344,18 @@ public class PostServiceTest {
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
             Boolean visible = false;
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(name).parent(parent).build();
 
-            given(postRepository.findAllByVisible(visible, testPageable)).willReturn(postEntityList);
+            given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(category);
+            given(postRepository.findAllByVisibleAndCategory(visible, category, testPageable)).willReturn(postEntityList);
             given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(CategoryDto.builder().name(name).parent(parent).build());
 
             // when
-            List<PostDto> returnDtoList = postService.getPostsByVisible(false, testPageable);
+            List<PostDto> returnDtoList = postService.getPostsByVisibleAndCategory(false, inputCategoryDto, testPageable);
 
             // then
-            verify(postRepository).findAllByVisible(visible, testPageable);
+            verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
+            verify(postRepository).findAllByVisibleAndCategory(visible, category, testPageable);
             verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(testCategoryEntity);
             assertThat(returnDtoList)
                 .allSatisfy(p -> assertThat(p)
@@ -357,6 +363,141 @@ public class PostServiceTest {
                     .containsExactly(visible, name, parent))
                 .size()
                 .isBetween(0, TEST_SIZE);
+        }
+
+        @Test
+        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 포스트 리스트를 반환한다.")
+        void Success_PostsByCategoriesOfParentCategoryPerPage_ReturnDtoList() {
+            // given
+            Category parentCategory = testParentCategoryEntity;
+            Category childCategory = testCategoryEntity;
+            List<Post> postEntityList = new ArrayList<>();
+            postEntityList.add(testPostEntity);
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(parentCategory.getName()).build();
+
+            given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(parentCategory);
+            given(postRepository.findAllByCategory_ParentCategory(parentCategory, testPageable)).willReturn(postEntityList);
+            given(categoryMapper.entityToCategoryDto(childCategory)).willReturn(
+                CategoryDto.builder().name(childCategory.getName()).parent(parentCategory.getName()).build());
+
+            // when
+            List<PostDto> returnDtoList = postService.getPostsByCategory(inputCategoryDto, testPageable);
+
+            // then
+            verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
+            verify(postRepository).findAllByCategory_ParentCategory(parentCategory, testPageable);
+            verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(childCategory);
+            assertThat(returnDtoList)
+                .allSatisfy(p -> assertThat(p)
+                    .extracting("category.name", "category.parent")
+                    .containsExactly(childCategory.getName(), parentCategory.getName()))
+                .size()
+                .isBetween(0, TEST_SIZE);
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 상위 카테고리의 하위 카테고리에 속한 포스트 요청 시 예외를 던진다.")
+        void Fail_PostsByCategoriesOfInvalidParentCategoryPerPage_ThrowException() {
+            // given
+            String name = "invalid";
+            Category category = MockEntity.mock(Category.class);
+            category.updateInfo("invalid", null);
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(name).build();
+
+            given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(category);
+
+            // when
+            Throwable thrown = catchThrowable(() -> postService.getPostsByCategory(inputCategoryDto, testPageable));
+
+            // then
+            verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
+            assertThat(thrown)
+                .isInstanceOf(Exception.class)
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
+        }
+
+        @Test
+        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 visible 포스트 리스트를 반환한다.")
+        void Success_VisiblePostsByCategoriesOfParentCategoryPerPage_ReturnDtoList() {
+            // given
+            Category parentCategory = testParentCategoryEntity;
+            Category childCategory = testCategoryEntity;
+            List<Post> postEntityList = new ArrayList<>();
+            postEntityList.add(testPostEntity);
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(parentCategory.getName()).build();
+            boolean visible = true;
+
+            given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(parentCategory);
+            given(postRepository.findAllByVisibleAndCategory_ParentCategory(visible, parentCategory, testPageable)).willReturn(postEntityList);
+            given(categoryMapper.entityToCategoryDto(childCategory)).willReturn(
+                CategoryDto.builder().name(childCategory.getName()).parent(parentCategory.getName()).build());
+
+            // when
+            List<PostDto> returnDtoList = postService.getPostsByVisibleAndCategory(visible, inputCategoryDto, testPageable);
+
+            // then
+            verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
+            verify(postRepository).findAllByVisibleAndCategory_ParentCategory(visible, parentCategory, testPageable);
+            verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(childCategory);
+            assertThat(returnDtoList)
+                .allSatisfy(p -> assertThat(p)
+                    .extracting("visible", "category.name", "category.parent")
+                    .containsExactly(visible, childCategory.getName(), parentCategory.getName()))
+                .size()
+                .isBetween(0, TEST_SIZE);
+        }
+
+        @Test
+        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 invisible 포스트 리스트를 반환한다.")
+        void Success_InvisiblePostsByCategoriesOfParentCategoryPerPage_ReturnDtoList() {
+            // given
+            Category parentCategory = testParentCategoryEntity;
+            Category childCategory = testCategoryEntity;
+            boolean visible = false;
+            testPostEntity.updateInfo(null, null, null, visible);
+            List<Post> postEntityList = new ArrayList<>();
+            postEntityList.add(testPostEntity);
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(parentCategory.getName()).build();
+
+            given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(parentCategory);
+            given(postRepository.findAllByVisibleAndCategory_ParentCategory(visible, parentCategory, testPageable)).willReturn(postEntityList);
+            given(categoryMapper.entityToCategoryDto(childCategory)).willReturn(
+                CategoryDto.builder().name(childCategory.getName()).parent(parentCategory.getName()).build());
+
+            // when
+            List<PostDto> returnDtoList = postService.getPostsByVisibleAndCategory(visible, inputCategoryDto, testPageable);
+
+            // then
+            verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
+            verify(postRepository).findAllByVisibleAndCategory_ParentCategory(visible, parentCategory, testPageable);
+            verify(categoryMapper, times(postEntityList.size())).entityToCategoryDto(childCategory);
+            assertThat(returnDtoList)
+                .allSatisfy(p -> assertThat(p)
+                    .extracting("visible", "category.name", "category.parent")
+                    .containsExactly(visible, childCategory.getName(), parentCategory.getName()))
+                .size()
+                .isBetween(0, TEST_SIZE);
+        }
+
+        @Test
+        @DisplayName("실패: 존재하지 않는 상위 카테고리의 하위 카테고리에 속한 visible 포스트 요청 시 예외를 던진다.")
+        void Fail_VisiblePostsByCategoriesOfInvalidParentCategoryPerPage_ThrowException() {
+            // given
+            String name = "invalid";
+            Category category = MockEntity.mock(Category.class);
+            category.updateInfo("invalid", null);
+            CategoryDto inputCategoryDto = CategoryDto.builder().name(name).build();
+
+            given(categoryMapper.CategoryDtoToEntity(inputCategoryDto)).willReturn(category);
+
+            // when
+            Throwable thrown = catchThrowable(() -> postService.getPostsByVisibleAndCategory(true, inputCategoryDto, testPageable));
+
+            // then
+            verify(categoryMapper).CategoryDtoToEntity(inputCategoryDto);
+            assertThat(thrown)
+                .isInstanceOf(Exception.class)
+                .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
         }
 
         @Test

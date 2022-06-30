@@ -63,7 +63,11 @@ public class PostService {
         checkArgument(categoryDto != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("CategoryDto"));
         Category categoryEntity = categoryMapper.CategoryDtoToEntity(categoryDto);
         checkArgument(categoryEntity.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
-        return postRepository.findAllByCategory(categoryEntity, pageable)
+        return (
+            categoryEntity.getParentCategory() == null
+                ? postRepository.findAllByCategory_ParentCategory(categoryEntity, pageable)
+                : postRepository.findAllByCategory(categoryEntity, pageable)
+            )
             .stream()
             .map(postMapper::entityToPostDto)
             .collect(Collectors.toList());
@@ -82,7 +86,11 @@ public class PostService {
         Category categoryEntity = categoryMapper.CategoryDtoToEntity(categoryDto);
         checkArgument(categoryEntity.getIdx() != null, ErrorMessage.NON_EXISTENT.getMessage("카테고리"));
         checkArgument(visible != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
-        return postRepository.findAllByVisibleAndCategory(visible, categoryEntity, pageable)
+        return (
+                categoryEntity.getParentCategory() == null
+                    ? postRepository.findAllByVisibleAndCategory_ParentCategory(visible, categoryEntity, pageable)
+                    : postRepository.findAllByVisibleAndCategory(visible, categoryEntity, pageable)
+            )
             .stream()
             .map(postMapper::entityToPostDto)
             .collect(Collectors.toList());

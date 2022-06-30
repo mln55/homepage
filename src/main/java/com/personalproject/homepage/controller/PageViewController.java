@@ -67,7 +67,13 @@ public class PageViewController {
             throw new PageNotFoundException();
         }
 
+        List<PostsCountModel> postsCountList = getPostsCountList();
+        long totalPostsCount = postsCountList.stream().mapToLong(pc -> pc.getCount()).sum();
+
         mv.addObject("post", post);
+        mv.addObject("selectedCategory", post.getCategory());
+        mv.addObject("totalPostsCount", totalPostsCount);
+        mv.addObject("postsCountList", postsCountList);
         return mv;
     }
 

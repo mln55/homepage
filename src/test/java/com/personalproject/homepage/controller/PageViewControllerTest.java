@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalproject.homepage.config.CustomUnitTestSecurityConfig;
 import com.personalproject.homepage.config.web.ViewName;
 import com.personalproject.homepage.dto.CategoryDto;
+import com.personalproject.homepage.dto.PostsPaginationDto;
 import com.personalproject.homepage.dto.PostDto;
 import com.personalproject.homepage.dto.PostsCountByCategoryDto;
 import com.personalproject.homepage.error.ApiException;
@@ -84,6 +85,7 @@ public class PageViewControllerTest {
 
     private static final long totalPostsCount = 7;
     private static final ArrayList<PostsCountModel> testPostsCountResultList = new ArrayList<>();
+    private static final PostsPaginationDto testPostsPagination = new PostsPaginationDto(1, 1);
 
     @BeforeAll
     static void setPostsCountResultList() {
@@ -154,7 +156,8 @@ public class PageViewControllerTest {
                 model().attributeDoesNotExist("selectedCategory"),
                 model().attribute("postList", samePropertyValuesAs(testPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
-                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList))
+                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
+                model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
             ));
         }
 
@@ -318,7 +321,8 @@ public class PageViewControllerTest {
                 model().attribute("selectedCategory", samePropertyValuesAs(testParentCategory)),
                 model().attribute("postList", samePropertyValuesAs(testPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
-                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList))
+                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
+                model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
             ));
         }
 
@@ -415,7 +419,8 @@ public class PageViewControllerTest {
                 model().attribute("selectedCategory", samePropertyValuesAs(testChildCategory)),
                 model().attribute("postList", samePropertyValuesAs(testChildCategoryPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
-                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList))
+                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
+                model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
             ));
         }
 

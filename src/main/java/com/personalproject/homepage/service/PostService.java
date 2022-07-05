@@ -36,6 +36,7 @@ public class PostService {
         checkArgument(postDto != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("PostDto"));
         checkArgument(postDto.getTitle() != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("title"));
         checkArgument(postDto.getContent() != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("content"));
+        checkArgument(postDto.getDesc() != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("desc"));
         checkArgument(postDto.getVisible() != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
 
         Post entity = postMapper.postDtoToEntity(postDto);
@@ -130,16 +131,18 @@ public class PostService {
         Category categoryAfter = entityAfter.getCategory();
         String titleAfter = entityAfter.getTitle();
         String contentAfter = entityAfter.getContent();
+        String descAfter = entityAfter.getDesc();
         Boolean visibleAfter = entityAfter.getVisible();
 
         boolean updatable = (titleAfter != null && !titleAfter.equals(entityBefore.getTitle()))
             || (visibleAfter != null && visibleAfter != entityBefore.getVisible())
             || (contentAfter != null && !contentAfter.equals(entityBefore.getContent()))
+            || (descAfter != null && !descAfter.equals(entityBefore.getDesc()))
             || (categoryBefore != null && !categoryBefore.equals(categoryAfter))
             || (categoryAfter != null && !categoryAfter.equals(categoryBefore));
         checkArgument(updatable, ErrorMessage.NO_CHANGES.getMessage());
 
-        entityBefore.updateInfo(categoryAfter, titleAfter, contentAfter, visibleAfter);
+        entityBefore.updateInfo(categoryAfter, titleAfter, contentAfter, descAfter, visibleAfter);
 
         return postMapper.entityToPostDto(entityBefore);
     }

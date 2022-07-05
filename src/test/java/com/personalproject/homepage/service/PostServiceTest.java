@@ -71,7 +71,7 @@ public class PostServiceTest {
         testCategoryEntity = MockEntity.mock(Category.class, 100L);
         testCategoryEntity.updateInfo("category", testParentCategoryEntity);
         testPostEntity = MockEntity.mock(Post.class, 99L);
-        testPostEntity.updateInfo(testCategoryEntity, "title", "content", true);
+        testPostEntity.updateInfo(testCategoryEntity, "title", "content", "desc", true);
     }
 
     @Nested
@@ -89,6 +89,7 @@ public class PostServiceTest {
                 .category(categoryDto)
                 .title("title")
                 .content("content")
+                .desc("desc")
                 .visible(true)
                 .build();
 
@@ -122,6 +123,7 @@ public class PostServiceTest {
                 .category(categoryDto)
                 .title("title")
                 .content("content")
+                .desc("desc")
                 .visible(true)
                 .build();
             given(categoryMapper.CategoryDtoToEntity(categoryDto)).willReturn(testParentCategoryEntity);
@@ -316,7 +318,7 @@ public class PostServiceTest {
         @DisplayName("성공: 페이지에 맞는 invisible인 포스트를 dto list로 반환한다.")
         void Success_InvisiblePostsByAnyCategoryPerPage_ReturnDtoList() {
             // given - testPostEntity
-            testPostEntity.updateInfo(null, null, null, false);
+            testPostEntity.updateInfo(null, null, null, null, false);
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
             Boolean visible = false;
@@ -340,7 +342,7 @@ public class PostServiceTest {
             Category category = testCategoryEntity;
             String name = category.getName();
             String parent = category.getParentCategory().getName();
-            testPostEntity.updateInfo(category, null, null, false);
+            testPostEntity.updateInfo(category, null, null, null, false);
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
             Boolean visible = false;
@@ -454,7 +456,7 @@ public class PostServiceTest {
             Category parentCategory = testParentCategoryEntity;
             Category childCategory = testCategoryEntity;
             boolean visible = false;
-            testPostEntity.updateInfo(null, null, null, visible);
+            testPostEntity.updateInfo(null, null, null, null, visible);
             List<Post> postEntityList = new ArrayList<>();
             postEntityList.add(testPostEntity);
             CategoryDto inputCategoryDto = CategoryDto.builder().name(parentCategory.getName()).build();
@@ -656,6 +658,7 @@ public class PostServiceTest {
             String newName = "newCategory";
             String newTitle = "newTitle";
             String newContent = "newContent";
+            String newDesc = "newDesc";
             boolean newVisible = false;
             Category newCategory = MockEntity.mock(Category.class, 1L);
             newCategory.updateInfo(newName, testParentCategoryEntity);
@@ -667,6 +670,7 @@ public class PostServiceTest {
                 .category(newCategoryDto)
                 .title(newTitle)
                 .content(newContent)
+                .desc(newDesc)
                 .visible(newVisible)
                 .build();
             Long id = testPostEntity.getIdx();
@@ -683,8 +687,8 @@ public class PostServiceTest {
             verify(categoryMapper).CategoryDtoToEntity(newCategoryDto);
             verify(categoryMapper).entityToCategoryDto(newCategory);
             assertThat(returnDto)
-                .extracting("category.name", "title", "content", "visible")
-                .containsExactly(newName, newTitle, newContent, newVisible);
+                .extracting("category.name", "title", "content", "desc", "visible")
+                .containsExactly(newName, newTitle, newContent, newDesc, newVisible);
         }
 
         @Test
@@ -695,6 +699,7 @@ public class PostServiceTest {
             PostDto postDto = PostDto.builder()
                 .title("title")
                 .content("content")
+                .desc("desc")
                 .visible(true)
                 .build();
             given(postRepository.findById(invalidId)).willReturn(Optional.empty());

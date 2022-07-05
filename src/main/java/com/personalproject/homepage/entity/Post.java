@@ -28,6 +28,8 @@ public class Post extends CommonEntity {
 
     private String content;
 
+    private String desc;
+
     private Long hit = 0L;
 
     private Boolean visible;
@@ -35,7 +37,7 @@ public class Post extends CommonEntity {
     Post() {/** empty */}
 
     @Builder
-    private Post (Category category, String title, String content, Boolean visible) {
+    private Post (Category category, String title, String content, String desc, Boolean visible) {
         /********************************************************************************
             생성 시 title, content, visible이 not null이어야 하지만
             변경 시 null인 field는 변경 대상에서 제외될 수 있으므로
@@ -46,12 +48,14 @@ public class Post extends CommonEntity {
         this.category = category;
         this.title = title;
         this.content = content;
+        this.desc = desc;
         this.visible = visible;
     }
 
-    public void updateInfo(Category category, String title, String content, Boolean visible) {
+    public void updateInfo(Category category, String title, String content, String desc, Boolean visible) {
         if (title != null) this.title = title;
         if (content != null) this.content = content;
+        if (desc != null) this.desc = desc;
         if (visible != null) this.visible = visible;
         if (category != null) setCategory(category);
     }

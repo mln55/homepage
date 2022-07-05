@@ -65,6 +65,7 @@ public class PageViewControllerTest {
         .category(testChildCategory)
         .title("title")
         .content("content")
+        .desc("desc")
         .visible(TEST_VISIBLE)
         .build();
     private static final List<PostDto> testPostList = LongStream.rangeClosed(1, 7)
@@ -73,6 +74,7 @@ public class PageViewControllerTest {
         .category(id <= 4 ? testChildCategory : testChildCategory2)
         .content("content" + id)
         .title("title")
+        .desc("desc")
         .visible(TEST_VISIBLE)
         .build())
     .collect(Collectors.toList());

@@ -103,19 +103,8 @@ public class PostService {
             .stream()
             .map(pc -> PostsCountByCategoryDto.builder()
                 .categoryDto(categoryMapper.entityToCategoryDto(pc.getCategory()))
-                .count(pc.getCount())
-                .build())
-            .collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<PostsCountByCategoryDto> getPostsCountByVisiblePerCategory(Boolean visible) {
-        checkArgument(visible != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("visible"));
-        return postRepository.countAllByVisibleGroupByCategory(visible)
-            .stream()
-            .map(pc -> PostsCountByCategoryDto.builder()
-                .categoryDto(categoryMapper.entityToCategoryDto(pc.getCategory()))
-                .count(pc.getCount())
+                .visibleCount(pc.getVisibleCount())
+                .invisibleCount(pc.getInvisibleCount())
                 .build())
             .collect(Collectors.toList());
     }

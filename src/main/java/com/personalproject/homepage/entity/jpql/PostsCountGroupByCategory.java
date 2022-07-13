@@ -10,8 +10,14 @@ import org.springframework.data.jpa.repository.Query;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @Query(
-    "SELECT new com.personalproject.homepage.entity.groupby.PostsCountByCategory(p.category, count(*))" +
-    " FROM Post p" +
-    " GROUP BY p.category"
+    "SELECT new com.personalproject.homepage.entity.groupby.PostsCountByCategory(" +
+        "c" +
+        ", SUM(CASE WHEN p.visible = true THEN 1 ELSE 0 END)" +
+        ", SUM(CASE WHEN p.visible = false THEN 1 ELSE 0 END)" +
+    ")" +
+    " FROM Category c" +
+    " LEFT JOIN Post p" +
+    " ON c = p.category" +
+    " GROUP BY c"
 )
 public @interface PostsCountGroupByCategory{ }

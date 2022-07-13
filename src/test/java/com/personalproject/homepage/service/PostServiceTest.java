@@ -528,6 +528,9 @@ public class PostServiceTest {
             // given - testCategoryEntity
             Category newCategoryEntity = MockEntity.mock(Category.class);
             newCategoryEntity.updateInfo("newCategory", testParentCategoryEntity);
+            CategoryDto parentCategoryDto = CategoryDto.builder()
+                .name(testParentCategoryEntity.getName())
+                .build();
             CategoryDto categoryDto = CategoryDto.builder()
                 .name(testCategoryEntity.getName())
                 .parent(testCategoryEntity.getParentCategory().getName())
@@ -537,9 +540,11 @@ public class PostServiceTest {
                 .parent(newCategoryEntity.getParentCategory().getName())
                 .build();
             given(postRepository.countAllGroupByCategory()).willReturn(List.of(
-                new PostsCountByCategory(testCategoryEntity, 2l),
-                new PostsCountByCategory(newCategoryEntity, 4l)
+                new PostsCountByCategory(testParentCategoryEntity, 6l, 0l),
+                new PostsCountByCategory(testCategoryEntity, 2l, 0l),
+                new PostsCountByCategory(newCategoryEntity, 4l, 0l)
             ));
+            given(categoryMapper.entityToCategoryDto(testParentCategoryEntity)).willReturn(parentCategoryDto);
             given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(categoryDto);
             given(categoryMapper.entityToCategoryDto(newCategoryEntity)).willReturn(newCategoryDto);
 
@@ -550,100 +555,24 @@ public class PostServiceTest {
             verify(postRepository).countAllGroupByCategory();
             verify(categoryMapper).entityToCategoryDto(testCategoryEntity);
             verify(categoryMapper).entityToCategoryDto(newCategoryEntity);
-            assertThat(postsCountList).size().isEqualTo(2);
+            assertThat(postsCountList).size().isEqualTo(3);
             assertThat(postsCountList)
                 .extracting("category")
                 .doesNotHaveDuplicates();
             assertThat(postsCountList)
                 .allMatch(pc ->
-                    pc.getCategory() != null && pc.getCount() != null &&
-                    pc.getCategory().getParent().equals(testParentCategoryEntity.getName()) &&
-                    (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
-                    (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
-                );
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리별 visible == true인 포스트 개수를 dto list로 반환한다.")
-        void Success_VisiblePostsCountPerCategory_ReturnDtoList() {
-            // given - testCategoryEntity
-            Boolean visible = true;
-            Category newCategoryEntity = MockEntity.mock(Category.class);
-            newCategoryEntity.updateInfo("newCategory", testParentCategoryEntity);
-            CategoryDto categoryDto = CategoryDto.builder()
-                .name(testCategoryEntity.getName())
-                .parent(testCategoryEntity.getParentCategory().getName())
-                .build();
-            CategoryDto newCategoryDto = CategoryDto.builder()
-                .name(newCategoryEntity.getName())
-                .parent(newCategoryEntity.getParentCategory().getName())
-                .build();
-            given(postRepository.countAllByVisibleGroupByCategory(visible)).willReturn(List.of(
-                new PostsCountByCategory(testCategoryEntity, 2l),
-                new PostsCountByCategory(newCategoryEntity, 4l)
-            ));
-            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(categoryDto);
-            given(categoryMapper.entityToCategoryDto(newCategoryEntity)).willReturn(newCategoryDto);
-
-            // when
-            List<PostsCountByCategoryDto> postsCountList = postService.getPostsCountByVisiblePerCategory(visible);
-
-            // then
-            verify(postRepository).countAllByVisibleGroupByCategory(visible);
-            verify(categoryMapper).entityToCategoryDto(testCategoryEntity);
-            verify(categoryMapper).entityToCategoryDto(newCategoryEntity);
-            assertThat(postsCountList).size().isEqualTo(2);
-            assertThat(postsCountList)
-                .extracting("category")
-                .doesNotHaveDuplicates();
-            assertThat(postsCountList)
-                .allMatch(pc ->
-                    pc.getCategory() != null && pc.getCount() != null &&
-                    pc.getCategory().getParent().equals(testParentCategoryEntity.getName()) &&
-                    (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
-                    (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
-                );
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리별 visible == false인 포스트 개수를 dto list로 반환한다.")
-        void Success_InvisiblePostsCountPerCategory_ReturnDtoList() {
-            // given - testCategoryEntity
-            Boolean visible = false;
-            Category newCategoryEntity = MockEntity.mock(Category.class);
-            newCategoryEntity.updateInfo("newCategory", testParentCategoryEntity);
-            CategoryDto categoryDto = CategoryDto.builder()
-                .name(testCategoryEntity.getName())
-                .parent(testCategoryEntity.getParentCategory().getName())
-                .build();
-            CategoryDto newCategoryDto = CategoryDto.builder()
-                .name(newCategoryEntity.getName())
-                .parent(newCategoryEntity.getParentCategory().getName())
-                .build();
-            given(postRepository.countAllByVisibleGroupByCategory(visible)).willReturn(List.of(
-                new PostsCountByCategory(testCategoryEntity, 2l),
-                new PostsCountByCategory(newCategoryEntity, 4l)
-            ));
-            given(categoryMapper.entityToCategoryDto(testCategoryEntity)).willReturn(categoryDto);
-            given(categoryMapper.entityToCategoryDto(newCategoryEntity)).willReturn(newCategoryDto);
-
-            // when
-            List<PostsCountByCategoryDto> postsCountList = postService.getPostsCountByVisiblePerCategory(visible);
-
-            // then
-            verify(postRepository).countAllByVisibleGroupByCategory(visible);
-            verify(categoryMapper).entityToCategoryDto(testCategoryEntity);
-            verify(categoryMapper).entityToCategoryDto(newCategoryEntity);
-            assertThat(postsCountList).size().isEqualTo(2);
-            assertThat(postsCountList)
-                .extracting("category")
-                .doesNotHaveDuplicates();
-            assertThat(postsCountList)
-                .allMatch(pc ->
-                    pc.getCategory() != null && pc.getCount() != null &&
-                    pc.getCategory().getParent().equals(testParentCategoryEntity.getName()) &&
-                    (pc.getCategory().getName().equals("category") && pc.getCount() == 2) ||
-                    (pc.getCategory().getName().equals("newCategory") && pc.getCount() == 4)
+                    (
+                        pc.getCategory().getName().equals("parent")
+                        && pc.getVisibleCount() == 6 && pc.getInvisibleCount() == 0
+                    ) ||
+                    (
+                        pc.getCategory().getName().equals("category")
+                        && pc.getVisibleCount() == 2 && pc.getInvisibleCount() == 0
+                    ) ||
+                    (
+                        pc.getCategory().getName().equals("newCategory")
+                        && pc.getVisibleCount() == 4 && pc.getInvisibleCount() == 0
+                    )
                 );
         }
     }

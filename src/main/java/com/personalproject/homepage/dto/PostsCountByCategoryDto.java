@@ -8,11 +8,14 @@ public class PostsCountByCategoryDto {
 
     private CategoryDto category;
 
-    private Long count;
+    private Long visibleCount;
+
+    private Long invisibleCount;
 
     @Builder
-    public PostsCountByCategoryDto (CategoryDto categoryDto, Long count) {
+    public PostsCountByCategoryDto (CategoryDto categoryDto, Long visibleCount, Long invisibleCount) {
         this.category = categoryDto;
-        this.count = count;
+        this.visibleCount = visibleCount;
+        this.invisibleCount = invisibleCount;
     }
 }

@@ -70,7 +70,6 @@ public class PostRepositoryTest {
 
         savedPost = MockEntity.mock(Post.class);
         savedPost.updateInfo(savedChildCategory, "title", "content", "desc", true);
-        // savedPost.updateInfo(savedChildCategory, "title", "content", "desc", true);
         postRepository.save(savedPost);
     }
 
@@ -353,7 +352,7 @@ public class PostRepositoryTest {
         void Success_CountPostsPerCategory_ReturnObjectList() {
             // given - savedChildCategory, savedChildCategory2
             // 6 posts in first, 5 in second
-            Boolean visible = false;
+            Boolean visible = true;
             IntStream.rangeClosed(1, 10)
                 .forEach(i -> {
                     Post p = MockEntity.mock(Post.class);
@@ -366,72 +365,23 @@ public class PostRepositoryTest {
             List<PostsCountByCategory> postCountList = postRepository.countAllGroupByCategory();
 
             // then
-            assertThat(postCountList).size().isEqualTo(2);
+            assertThat(postCountList).size().isEqualTo(3);
             assertThat(postCountList)
                 .extracting("category")
                 .doesNotHaveDuplicates();
             assertThat(postCountList).allMatch(pc ->
-                pc.getCategory() != null && pc.getCount() != null &&
-                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 6) ||
-                (pc.getCategory().equals(savedChildCategory2) && pc.getCount() == 5)
-            );
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리별 visible == true인 포스트 개수를 반환한다.")
-        void Success_CountVisiblePostsPerCategory_ReturnObjectList() {
-            // given - savedChildCategory, savedChildCategory2
-            // 6 visible posts in first, 5 in second
-            Boolean visible = true;
-            IntStream.rangeClosed(1, 10)
-                .forEach(i -> {
-                    Post p = MockEntity.mock(Post.class);
-                    p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
-                        "title", "content", "desc", visible);
-                    postRepository.save(p);
-                });
-
-            // when
-            List<PostsCountByCategory> postCountList = postRepository.countAllByVisibleGroupByCategory(visible);
-
-            // then
-            assertThat(postCountList).size().isEqualTo(2);
-            assertThat(postCountList)
-                .extracting("category")
-                .doesNotHaveDuplicates();
-            assertThat(postCountList).allMatch(pc ->
-                pc.getCategory() != null && pc.getCount() != null &&
-                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 6) ||
-                (pc.getCategory().equals(savedChildCategory2) && pc.getCount() == 5)
-            );
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리별 visible == false인 포스트 개수를 반환한다.")
-        void Success_CountInVisiblePostsPerCategory_ReturnObjectList() {
-            // given - savedChildCategory, savedChildCategory2
-            // 5 invisible posts in both
-            Boolean visible = false;
-            IntStream.rangeClosed(1, 10)
-                .forEach(i -> {
-                    Post p = MockEntity.mock(Post.class);
-                    p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
-                        "title", "content", "desc", visible);
-                    postRepository.save(p);
-                });
-
-            // when
-            List<PostsCountByCategory> postCountList = postRepository.countAllByVisibleGroupByCategory(visible);
-
-            // then
-            assertThat(postCountList).size().isEqualTo(2);
-            assertThat(postCountList)
-                .extracting("category")
-                .doesNotHaveDuplicates();
-            assertThat(postCountList).allMatch(pc ->
-                pc.getCategory() != null && pc.getCount() != null &&
-                (pc.getCategory().equals(savedChildCategory) && pc.getCount() == 5) ||
-                (pc.getCategory().equals(savedChildCategory2) && pc.getCount() == 5)
+                (
+                    pc.getCategory().equals(savedParentCategory)
+                    && pc.getVisibleCount() == 0 && pc.getInvisibleCount() == 0
+                ) ||
+                (
+                    pc.getCategory().equals(savedChildCategory)
+                    && pc.getVisibleCount() == 6 && pc.getInvisibleCount() == 0
+                ) ||
+                (
+                    pc.getCategory().equals(savedChildCategory2)
+                    && pc.getVisibleCount() == 5 && pc.getInvisibleCount() == 0
+                )
             );
         }
     }

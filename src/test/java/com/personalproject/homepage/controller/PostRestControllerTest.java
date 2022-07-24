@@ -63,13 +63,13 @@ public class PostRestControllerTest {
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final CategoryDto testCategory = CategoryDto.builder().name("name").parent("parent").build();
     private static final List<PostDto> testPostList = LongStream.rangeClosed(1, TEST_SIZE)
-        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(id % 2 == 0).build())
+        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).desc("desc").visible(id % 2 == 0).build())
         .collect(Collectors.toList());
     private static final List<PostDto> testVisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
-        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(true).build())
+        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).desc("desc").visible(true).build())
         .collect(Collectors.toList());
     private static final List<PostDto> testInvisiblePostList = LongStream.rangeClosed(1, TEST_SIZE)
-        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).visible(false).build())
+        .mapToObj(id -> PostDto.builder().id(id).category(testCategory).desc("desc").visible(false).build())
         .collect(Collectors.toList());
 
     @Autowired MockMvc mockMvc;
@@ -303,6 +303,7 @@ public class PostRestControllerTest {
                 .category(testCategory)
                 .title("title")
                 .content("content")
+                .desc("desc")
                 .visible(true)
                 .build();
             given(postService.createPost(any(PostDto.class))).willReturn(post);
@@ -328,6 +329,7 @@ public class PostRestControllerTest {
                 jsonPath("$.response.category.parent", is(post.getCategory().getParent())),
                 jsonPath("$.response.title", is(post.getTitle())),
                 jsonPath("$.response.content", is(post.getContent())),
+                jsonPath("$.response.desc", is(post.getDesc())),
                 jsonPath("$.response.visible", is(post.getVisible()))
             ));
         }
@@ -345,6 +347,7 @@ public class PostRestControllerTest {
                 .category(testCategory)
                 .title("title")
                 .content("content")
+                .desc("desc")
                 .visible(true)
                 .build();
             given(postService.getPost(anyLong())).willReturn(post);
@@ -367,6 +370,7 @@ public class PostRestControllerTest {
                 jsonPath("$.response.category.parent", is(post.getCategory().getParent())),
                 jsonPath("$.response.title", is(post.getTitle())),
                 jsonPath("$.response.content", is(post.getContent())),
+                jsonPath("$.response.desc", is(post.getDesc())),
                 jsonPath("$.response.visible", is(post.getVisible()))
             ));
         }
@@ -438,6 +442,7 @@ public class PostRestControllerTest {
                 .category(testCategory)
                 .title("title")
                 .content("content")
+                .desc("desc")
                 .visible(true)
                 .build();
             PostDto inputPost = PostDto.builder().category(testCategory).build();
@@ -465,6 +470,7 @@ public class PostRestControllerTest {
                 jsonPath("$.response.category.parent", is(post.getCategory().getParent())),
                 jsonPath("$.response.title", is(post.getTitle())),
                 jsonPath("$.response.content", is(post.getContent())),
+                jsonPath("$.response.desc", is(post.getDesc())),
                 jsonPath("$.response.visible", is(post.getVisible()))
             ));
         }

@@ -69,7 +69,8 @@ public class PostRepositoryTest {
         categoryRepository.save(savedChildCategory2);
 
         savedPost = MockEntity.mock(Post.class);
-        savedPost.updateInfo(savedChildCategory, "title", "content", true);
+        savedPost.updateInfo(savedChildCategory, "title", "content", "desc", true);
+        // savedPost.updateInfo(savedChildCategory, "title", "content", "desc", true);
         postRepository.save(savedPost);
     }
 
@@ -81,7 +82,7 @@ public class PostRepositoryTest {
         void Success_PostWithCategory_Create() {
             // given - savedChildCategory
             Post post = MockEntity.mock(Post.class);
-            post.updateInfo(savedChildCategory, "title", "content", true);
+            post.updateInfo(savedChildCategory, "title", "content", "desc", true);
 
             // when
             Post newPost = postRepository.save(post);
@@ -120,7 +121,7 @@ public class PostRepositoryTest {
             // given - total 11 posts including savedPost
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, true);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + i, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -145,7 +146,7 @@ public class PostRepositoryTest {
             Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(null, "title" + i, "content" + i, i % 2 == 0);
+                p.updateInfo(null, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -171,7 +172,7 @@ public class PostRepositoryTest {
             Boolean visible = false;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(null, "title" + i, "content" + i, i % 2 == 0);
+                p.updateInfo(null, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -196,7 +197,7 @@ public class PostRepositoryTest {
             // given - total 11 posts including savedPost in same category
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, true);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -222,7 +223,7 @@ public class PostRepositoryTest {
             Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -248,7 +249,7 @@ public class PostRepositoryTest {
             Boolean visible = false;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -275,7 +276,7 @@ public class PostRepositoryTest {
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
                 p.updateInfo(i % 2 == 0 ? savedChildCategory : savedChildCategory2,
-                    "title" + i, "content" + i, true);
+                    "title" + i, "content" + i, "desc" + 1, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -302,7 +303,7 @@ public class PostRepositoryTest {
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
                 p.updateInfo(i % 2 == 0 ? savedChildCategory : savedChildCategory2,
-                    "title" + i, "content" + i, i % 2 == 0);
+                    "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -328,7 +329,7 @@ public class PostRepositoryTest {
             Boolean visible = false;
             for (int i = 0; i < 10; ++i) {
                 Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -357,7 +358,7 @@ public class PostRepositoryTest {
                 .forEach(i -> {
                     Post p = MockEntity.mock(Post.class);
                     p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
-                        "title", "content", visible);
+                        "title", "content", "desc", visible);
                     postRepository.save(p);
                 });
 
@@ -386,7 +387,7 @@ public class PostRepositoryTest {
                 .forEach(i -> {
                     Post p = MockEntity.mock(Post.class);
                     p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
-                        "title", "content", visible);
+                        "title", "content", "desc", visible);
                     postRepository.save(p);
                 });
 
@@ -415,7 +416,7 @@ public class PostRepositoryTest {
                 .forEach(i -> {
                     Post p = MockEntity.mock(Post.class);
                     p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
-                        "title", "content", visible);
+                        "title", "content", "desc", visible);
                     postRepository.save(p);
                 });
 
@@ -444,10 +445,11 @@ public class PostRepositoryTest {
             // given - savedPost, savedChildCategory2
             String title = "changed";
             String content = "changed";
+            String desc = "changed";
             boolean visible = false;
 
             // when
-            savedPost.updateInfo(savedChildCategory2, title, content, visible);
+            savedPost.updateInfo(savedChildCategory2, title, content, desc, visible);
 
             Post updatedPost = postRepository.findById(savedPost.getIdx()).orElseThrow();
 

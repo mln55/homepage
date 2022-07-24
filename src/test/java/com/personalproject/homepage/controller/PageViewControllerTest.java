@@ -208,19 +208,24 @@ public class PageViewControllerTest {
         void Success_PostPage_ReturnModelAndView() throws Exception {
             // given
             given(postService.getPost(anyLong())).willReturn(testPost);
+            given(postService.getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE))).willReturn(testPostsCountList);
 
             // when
             ResultActions result = mockMvc.perform(get("/" + testPost.getId()));
 
             // then
             verify(postService).getPost(anyLong());
+            verify(postService).getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE));
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(PageViewController.class),
                 handler().methodName("pagePost"),
                 content().contentType(HTML_CONTENT_TYPE),
                 view().name(ViewName.POST),
-                model().attribute("post", samePropertyValuesAs(testPost))
+                model().attribute("post", samePropertyValuesAs(testPost)),
+                model().attribute("selectedCategory", samePropertyValuesAs(testPost.getCategory())),
+                model().attribute("totalPostsCount", equalTo(totalPostsCount)),
+                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList))
             ));
         }
 

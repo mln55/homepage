@@ -21,6 +21,11 @@ spring:
   devtools:
     livereload:
       enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 15MB
+
 
 # 배포 시 logback-spring.xml의 scan을 true로 한다.
 # 아래 외부 경로에 해당 xml file을 위치

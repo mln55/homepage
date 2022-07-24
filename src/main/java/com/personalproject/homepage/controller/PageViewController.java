@@ -13,6 +13,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import com.personalproject.homepage.config.web.ViewName;
 import com.personalproject.homepage.dto.CategoryDto;
+import com.personalproject.homepage.dto.PostsPaginationDto;
 import com.personalproject.homepage.dto.PostDto;
 import com.personalproject.homepage.dto.PostsCountByCategoryDto;
 import com.personalproject.homepage.error.PageNotFoundException;
@@ -31,6 +32,8 @@ public class PageViewController {
 
     private static final boolean VISIBLE = true;
 
+    private static final int PAGE_SIZE = 8;
+
     private final PostService postService;
 
     @GetMapping({"/", "/category"})
@@ -45,10 +48,12 @@ public class PageViewController {
 
         List<PostsCountModel> postsCountList = getPostsCountList();
         long totalPostsCount = postsCountList.stream().mapToLong(pc -> pc.getCount()).sum();
+        PostsPaginationDto postsPagination = new PostsPaginationDto(pageable.getPageNumber() + 1, ((int)totalPostsCount - 1) / PAGE_SIZE + 1);
         mv.addObject("selectedCategory", null);
         mv.addObject("postList", postList);
         mv.addObject("totalPostsCount", totalPostsCount);
         mv.addObject("postsCountList", postsCountList);
+        mv.addObject("pagination", postsPagination);
         return mv;
     }
 
@@ -81,7 +86,7 @@ public class PageViewController {
     public ModelAndView pageCategory(
         Pageable pageable,
         @PathVariable(required = false) String parent,
-        @PathVariable() String name
+        @PathVariable String name
     ) {
         ModelAndView mv = new ModelAndView(ViewName.CATEGORY);
         CategoryDto category = CategoryDto.builder()
@@ -95,13 +100,23 @@ public class PageViewController {
             throw new PageNotFoundException();
         }
 
-        mv.addObject("postList", postList);
         List<PostsCountModel> postsCountList = getPostsCountList();
         long totalPostsCount = postsCountList.stream().mapToLong(pc -> pc.getCount()).sum();
 
-        mv.addObject("totalPostsCount", totalPostsCount);
+        String categoryName = category.getParent() == null ? category.getName() : category.getParent();
+        PostsPaginationDto postsPagination = new PostsPaginationDto(1, 1);
+        for (PostsCountModel pc : postsCountList) {
+            if (pc.getParentName().equals(categoryName)) {
+                postsPagination = new PostsPaginationDto(pageable.getPageNumber() + 1, (pc.getCount().intValue() - 1) / PAGE_SIZE + 1);
+                break;
+            }
+        }
+
         mv.addObject("selectedCategory", category);
+        mv.addObject("postList", postList);
+        mv.addObject("totalPostsCount", totalPostsCount);
         mv.addObject("postsCountList", postsCountList);
+        mv.addObject("pagination", postsPagination);
         return mv;
     }
 

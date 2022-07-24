@@ -23,6 +23,11 @@ public interface PostRepository extends CommonRepository<Post, Long> {
 
     List<Post> findAllByVisibleAndCategory(Boolean visible, Category category, Pageable pageable);
 
+    // underscore가 없어도 된다.
+    List<Post> findAllByCategory_ParentCategory(Category category, Pageable pageable);
+
+    List<Post> findAllByVisibleAndCategory_ParentCategory(Boolean visible, Category category, Pageable pageable);
+
     @PostsCountGroupByCategory
     List<PostsCountByCategory> countAllGroupByCategory();
 

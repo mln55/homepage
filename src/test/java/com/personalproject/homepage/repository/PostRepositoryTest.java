@@ -267,6 +267,86 @@ public class PostRepositoryTest {
                 .isEqualTo(5);
         }
 
+
+        @Test
+        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 포스트 리스트를 반환한다.")
+        void Success_PostsByParentCategoryPerPage_ReturnPostList() {
+            // given - total 11 posts including savedPost in categories of parent category
+            for (int i = 0; i < 10; ++i) {
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(i % 2 == 0 ? savedChildCategory : savedChildCategory2,
+                    "title" + i, "content" + i, true);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
+            }
+
+            // when
+            List<Post> postList = postRepository.findAllByCategory_ParentCategory(savedParentCategory, testPageable);
+
+            // then
+            assertThat(postList)
+                .allMatch(p -> p.getCategory().getParentCategory().equals(savedParentCategory))
+                .isSortedAccordingTo(createAtDescComp)
+                .hasSizeBetween(0, TEST_SIZE)
+                .size()
+                .isEqualTo(TEST_SIZE);
+        }
+
+        @Test
+        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 visible 포스트 리스트를 반환한다.")
+        void Success_PostsIsVisibleByParentCategoryPerPage_ReturnPostList() {
+            // given - total 6 visible posts including savedPost in categories of parent category
+            Boolean visible = true;
+            for (int i = 0; i < 10; ++i) {
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(i % 2 == 0 ? savedChildCategory : savedChildCategory2,
+                    "title" + i, "content" + i, i % 2 == 0);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
+            }
+
+            // when
+            List<Post> postList = postRepository.findAllByVisibleAndCategory_ParentCategory(visible, savedParentCategory, testPageable);
+
+            // then
+            assertThat(postList)
+                .allMatch(p -> p.getCategory().getParentCategory().equals(savedParentCategory) && p.getVisible())
+                .isSortedAccordingTo(createAtDescComp)
+                .hasSizeBetween(0, TEST_SIZE)
+                .size()
+                .isEqualTo(6);
+        }
+
+        @Test
+        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 invisible 포스트 리스트를 반환한다.")
+        void Success_PostsIsInVisibleByParentCategoryPerPage_ReturnPostList() {
+            // given - total 5 invisible posts in categories of parent category
+            Boolean visible = false;
+            for (int i = 0; i < 10; ++i) {
+                Post p = MockEntity.mock(Post.class);
+                p.updateInfo(savedChildCategory, "title" + i, "content" + i, i % 2 == 0);
+                postRepository.save(p);
+                try {
+                    Thread.sleep(30);
+                } catch (Exception e) {/** empty */}
+            }
+
+            // when
+            List<Post> postList = postRepository.findAllByVisibleAndCategory_ParentCategory(visible, savedParentCategory, testPageable);
+
+            // then
+            assertThat(postList)
+                .allMatch(p -> p.getCategory().getParentCategory().equals(savedParentCategory) && !p.getVisible())
+                .isSortedAccordingTo(createAtDescComp)
+                .hasSizeBetween(0, TEST_SIZE)
+                .size()
+                .isEqualTo(5);
+        }
+
         @Test
         @DisplayName("성공: 카테고리별 포스트 개수를 반환한다.")
         void Success_CountPostsPerCategory_ReturnObjectList() {

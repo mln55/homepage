@@ -37,13 +37,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalproject.homepage.config.CustomUnitTestSecurityConfig;
 import com.personalproject.homepage.config.web.ViewName;
 import com.personalproject.homepage.dto.CategoryDto;
-import com.personalproject.homepage.dto.PostsPaginationDto;
 import com.personalproject.homepage.dto.PostDto;
 import com.personalproject.homepage.dto.PostsCountByCategoryDto;
+import com.personalproject.homepage.dto.PostsPaginationDto;
 import com.personalproject.homepage.error.ApiException;
 import com.personalproject.homepage.error.ErrorMessage;
 import com.personalproject.homepage.model.PostsCountModel;
-import com.personalproject.homepage.model.PostsCountModel.SubPostsCountModel;
 import com.personalproject.homepage.service.PostService;
 
 @WebMvcTest(PageViewController.class)
@@ -80,20 +79,23 @@ public class PageViewControllerTest {
     .collect(Collectors.toList());
 
     private static final List<PostDto> testChildCategoryPostList = testPostList.subList(0, 5);
-    private static final List<PostsCountByCategoryDto> testPostsCountList = List.of(
-        new PostsCountByCategoryDto(testChildCategory, 4l),
-        new PostsCountByCategoryDto(testChildCategory2, 3l)
-    );
+    private static final ArrayList<PostsCountByCategoryDto> testPostsCountList = new ArrayList<>();
 
-    private static final long totalPostsCount = 7;
+    private static final long totalPostsCount = 7l;
+    private static final long visiblePostsCount = 7l;
+    private static final long invisiblePostsCount = 0l;
     private static final ArrayList<PostsCountModel> testPostsCountResultList = new ArrayList<>();
     private static final PostsPaginationDto testPostsPagination = new PostsPaginationDto(1, 1);
 
     @BeforeAll
-    static void setPostsCountResultList() {
-        testPostsCountResultList.add(new PostsCountModel(testParentCategory.getName()));
-        List<SubPostsCountModel> spcList = testPostsCountResultList.get(0).getSubPostsCountList();
-        testPostsCountList.forEach(pc -> spcList.add(new SubPostsCountModel(pc.getCategory().getName(), pc.getCount())));
+    static void setPostsCountList() {
+        testPostsCountList.add(new PostsCountByCategoryDto(testParentCategory, 7l, 0l));
+        testPostsCountList.add(new PostsCountByCategoryDto(testChildCategory, 4l, 0l));
+        testPostsCountList.add(new PostsCountByCategoryDto(testChildCategory2, 3l, 0l));
+
+        testPostsCountResultList.add(new PostsCountModel(testParentCategory, 7l, 0l));
+        testPostsCountResultList.add(new PostsCountModel(testChildCategory, 4l, 0l));
+        testPostsCountResultList.add(new PostsCountModel(testChildCategory2, 3l, 0l));
     }
 
     @Autowired MockMvc mockMvc;
@@ -141,14 +143,14 @@ public class PageViewControllerTest {
         // 인덱스 페이지 요청 성공
         void successIndexPageReturnModelAndView(final String uri) throws Exception {
             given(postService.getPostsByVisible(eq(TEST_VISIBLE), any(Pageable.class))).willReturn(testPostList);
-            given(postService.getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE))).willReturn(testPostsCountList);
+            given(postService.getPostsCountPerCategory()).willReturn(testPostsCountList);
 
             // when
             ResultActions result = mockMvc.perform(get(uri));
 
             // then
             verify(postService).getPostsByVisible(eq(TEST_VISIBLE), any(Pageable.class));
-            verify(postService).getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE));
+            verify(postService).getPostsCountPerCategory();
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(PageViewController.class),
@@ -158,6 +160,8 @@ public class PageViewControllerTest {
                 model().attributeDoesNotExist("selectedCategory"),
                 model().attribute("postList", samePropertyValuesAs(testPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
+                model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
+                model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
                 model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
                 model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
             ));
@@ -213,14 +217,14 @@ public class PageViewControllerTest {
         void Success_PostPage_ReturnModelAndView() throws Exception {
             // given
             given(postService.getPost(anyLong())).willReturn(testPost);
-            given(postService.getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE))).willReturn(testPostsCountList);
+            given(postService.getPostsCountPerCategory()).willReturn(testPostsCountList);
 
             // when
             ResultActions result = mockMvc.perform(get("/" + testPost.getId()));
 
             // then
             verify(postService).getPost(anyLong());
-            verify(postService).getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE));
+            verify(postService).getPostsCountPerCategory();
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(PageViewController.class),
@@ -230,6 +234,8 @@ public class PageViewControllerTest {
                 model().attribute("post", samePropertyValuesAs(testPost)),
                 model().attribute("selectedCategory", samePropertyValuesAs(testPost.getCategory())),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
+                model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
+                model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
                 model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList))
             ));
         }
@@ -306,14 +312,14 @@ public class PageViewControllerTest {
             // given
             given(postService.getPostsByVisibleAndCategory(eq(TEST_VISIBLE), any(CategoryDto.class), any(Pageable.class)))
                 .willReturn(testPostList);
-            given(postService.getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE))).willReturn(testPostsCountList);
+            given(postService.getPostsCountPerCategory()).willReturn(testPostsCountList);
 
             // when
             ResultActions result = mockMvc.perform(get("/category/" + testParentCategory.getName()));
 
             // then
             verify(postService).getPostsByVisibleAndCategory(eq(TEST_VISIBLE), any(CategoryDto.class), any(Pageable.class));
-            verify(postService).getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE));
+            verify(postService).getPostsCountPerCategory();
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(PageViewController.class),
@@ -323,6 +329,8 @@ public class PageViewControllerTest {
                 model().attribute("selectedCategory", samePropertyValuesAs(testParentCategory)),
                 model().attribute("postList", samePropertyValuesAs(testPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
+                model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
+                model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
                 model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
                 model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
             ));
@@ -402,7 +410,7 @@ public class PageViewControllerTest {
             // given
             given(postService.getPostsByVisibleAndCategory(eq(TEST_VISIBLE), any(CategoryDto.class), any(Pageable.class)))
                 .willReturn(testChildCategoryPostList);
-            given(postService.getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE))).willReturn(testPostsCountList);
+            given(postService.getPostsCountPerCategory()).willReturn(testPostsCountList);
             String parent = testParentCategory.getName();
             String child = testChildCategory.getName();
 
@@ -411,7 +419,7 @@ public class PageViewControllerTest {
 
             // then
             verify(postService).getPostsByVisibleAndCategory(eq(TEST_VISIBLE), any(CategoryDto.class), any(Pageable.class));
-            verify(postService).getPostsCountByVisiblePerCategory(eq(TEST_VISIBLE));
+            verify(postService).getPostsCountPerCategory();
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(PageViewController.class),
@@ -421,6 +429,8 @@ public class PageViewControllerTest {
                 model().attribute("selectedCategory", samePropertyValuesAs(testChildCategory)),
                 model().attribute("postList", samePropertyValuesAs(testChildCategoryPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
+                model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
+                model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
                 model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
                 model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
             ));

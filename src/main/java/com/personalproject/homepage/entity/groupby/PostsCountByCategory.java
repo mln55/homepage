@@ -11,5 +11,7 @@ public class PostsCountByCategory {
 
     private Category category;
 
-    private Long count;
+    private Long visibleCount;
+
+    private Long invisibleCount;
 }

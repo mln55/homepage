@@ -15,6 +15,7 @@ CREATE TABLE post (
   category_idx BIGINT,
   title VARCHAR(100) NOT NULL,
   content TEXT NOT NULL,
+  desc VARCHAR(500) NOT NULL,
   hit BIGINT NOT NULL DEFAULT 0,
   visible BIT(1) NOT NULL,
   create_at DATETIME NOT NULL DEFAULT NOW(),

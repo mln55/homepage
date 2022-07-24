@@ -2,10 +2,14 @@ package com.personalproject.homepage.dto;
 
 import java.time.LocalDateTime;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
 @Getter
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class PostDto {
 
     private Long id;
@@ -16,6 +20,8 @@ public class PostDto {
 
     private String content;
 
+    private String desc;
+
     private Long hit;
 
     private Boolean visible;
@@ -25,16 +31,4 @@ public class PostDto {
     private LocalDateTime updateAt;
 
     private PostDto() {/** empty */}
-
-    @Builder
-    private PostDto(Long id, CategoryDto category, String title, String content, Long hit, Boolean visible, LocalDateTime postAt, LocalDateTime updateAt) {
-        this.id = id;
-        this.category = category;
-        this.title = title;
-        this.content = content;
-        this.hit = hit;
-        this.visible = visible;
-        this.postAt = postAt;
-        this.updateAt = updateAt;
-    }
 }

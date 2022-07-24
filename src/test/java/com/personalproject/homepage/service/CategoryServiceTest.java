@@ -523,7 +523,7 @@ public class CategoryServiceTest {
             Category category = testParentCategoryEntity;
             String name = category.getName();
             Post post = MockEntity.mock(Post.class, 1L);
-            post.updateInfo(category, "title", "content", true);
+            post.updateInfo(category, "title", "content", "desc", true);
             CategoryDto inputDto = CategoryDto.builder().name(name).build();
             given(categoryRepository.findByNameAndParentCategory(name, null)).willReturn(Optional.of(category));
 

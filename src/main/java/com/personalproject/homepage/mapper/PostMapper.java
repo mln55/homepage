@@ -28,6 +28,7 @@ public class PostMapper {
             .category(categoryMapper.entityToCategoryDto(entity.getCategory()))
             .title(entity.getTitle())
             .content(entity.getContent())
+            .desc(entity.getDesc())
             .hit(entity.getHit())
             .visible(entity.getVisible())
             .postAt(entity.getCreateAt())
@@ -48,6 +49,7 @@ public class PostMapper {
                 .category(category)
                 .title(postDto.getTitle())
                 .content(postDto.getContent())
+                .desc(postDto.getDesc())
                 .visible(postDto.getVisible())
                 .build();
 

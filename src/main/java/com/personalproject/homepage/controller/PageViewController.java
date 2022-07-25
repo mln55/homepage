@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.ModelAndView;
 
+import com.personalproject.homepage.config.web.PageType;
 import com.personalproject.homepage.config.web.ViewName;
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.dto.PostDto;
@@ -44,7 +47,7 @@ public class PageViewController {
 
     @GetMapping({"/", "/category"})
     public ModelAndView pageIndex(Pageable pageable) {
-        ModelAndView mv = new ModelAndView(ViewName.CATEGORY);
+        ModelAndView mv = new ModelAndView(ViewName.INDEX);
         List<PostDto> postList = postService.getPostsByVisible(VISIBLE, pageable);
 
         if (postList.isEmpty() && pageable.getPageNumber() != 0) {
@@ -62,21 +65,25 @@ public class PageViewController {
         mv.addObject("postList", postList);
         mv.addObject("postsCountList", postsCountList);
         mv.addObject("pagination", postsPagination);
+        mv.addObject("pageType", PageType.POST_LIST);
         mv.addAllObjects(countMap);
         return mv;
     }
 
     @GetMapping("/{postId}")
-    public ModelAndView pagePost(@PathVariable String postId) {
+    public ModelAndView pagePost(
+        @PathVariable String postId,
+        HttpServletRequest request
+    ) {
 
         if (!postId.matches("\\d+")) {
             log.info("형식에 맞지 않는 postId 요청. postId: '{}'", postId);
             throw new PageNotFoundException();
         }
 
-        ModelAndView mv = new ModelAndView(ViewName.POST);
+        ModelAndView mv = new ModelAndView(ViewName.INDEX);
         PostDto post = postService.getPost(Long.parseLong(postId));
-        if (!post.getVisible()) {
+        if (!post.getVisible() && !request.isUserInRole("ADMIN")) {
             log.info("비공개 포스트 요청. postId: '{}'", postId);
             throw new PageNotFoundException();
         }
@@ -87,6 +94,7 @@ public class PageViewController {
         mv.addObject("selectedCategory", post.getCategory());
         mv.addObject("postsCountList", postsCountList);
         mv.addAllObjects(getCountMap(postsCountList));
+        mv.addObject("pageType", PageType.POST_DETAIL);
         return mv;
     }
 
@@ -96,7 +104,7 @@ public class PageViewController {
         @PathVariable(required = false) String parent,
         @PathVariable String name
     ) {
-        ModelAndView mv = new ModelAndView(ViewName.CATEGORY);
+        ModelAndView mv = new ModelAndView(ViewName.INDEX);
         CategoryDto category = CategoryDto.builder()
             .name(name)
             .parent(parent)
@@ -124,6 +132,7 @@ public class PageViewController {
         mv.addObject("postsCountList", postsCountList);
         mv.addObject("pagination", postsPagination);
         mv.addAllObjects(getCountMap(postsCountList));
+        mv.addObject("pageType", PageType.POST_LIST);
         return mv;
     }
 

@@ -35,6 +35,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalproject.homepage.config.CustomUnitTestSecurityConfig;
+import com.personalproject.homepage.config.web.PageType;
 import com.personalproject.homepage.config.web.ViewName;
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.dto.PostDto;
@@ -156,14 +157,15 @@ public class PageViewControllerTest {
                 handler().handlerType(PageViewController.class),
                 handler().methodName("pageIndex"),
                 content().contentType(HTML_CONTENT_TYPE),
-                view().name(ViewName.CATEGORY),
+                view().name(ViewName.INDEX),
                 model().attributeDoesNotExist("selectedCategory"),
                 model().attribute("postList", samePropertyValuesAs(testPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
                 model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
                 model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
                 model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
-                model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
+                model().attribute("pagination", samePropertyValuesAs(testPostsPagination)),
+                model().attribute("pageType", equalTo(PageType.POST_LIST))
             ));
         }
 
@@ -230,13 +232,14 @@ public class PageViewControllerTest {
                 handler().handlerType(PageViewController.class),
                 handler().methodName("pagePost"),
                 content().contentType(HTML_CONTENT_TYPE),
-                view().name(ViewName.POST),
+                view().name(ViewName.INDEX),
                 model().attribute("post", samePropertyValuesAs(testPost)),
                 model().attribute("selectedCategory", samePropertyValuesAs(testPost.getCategory())),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
                 model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
                 model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
-                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList))
+                model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
+                model().attribute("pageType", equalTo(PageType.POST_DETAIL))
             ));
         }
 
@@ -305,9 +308,9 @@ public class PageViewControllerTest {
 
     @Nested
     @DisplayName("GET /category/{name}")
-    class Test_Get_TopCategoryPage {
+    class Test_Get_PostListPageOfTopCategory {
         @Test
-        @DisplayName("성공")
+        @DisplayName("성공: 상위 카테고리에 속한 게시글 페이지 요청")
         void Success_TopCategoryPage_ReturnModelAndView() throws Exception {
             // given
             given(postService.getPostsByVisibleAndCategory(eq(TEST_VISIBLE), any(CategoryDto.class), any(Pageable.class)))
@@ -325,14 +328,15 @@ public class PageViewControllerTest {
                 handler().handlerType(PageViewController.class),
                 handler().methodName("pageCategory"),
                 content().contentType(HTML_CONTENT_TYPE),
-                view().name(ViewName.CATEGORY),
+                view().name(ViewName.INDEX),
                 model().attribute("selectedCategory", samePropertyValuesAs(testParentCategory)),
                 model().attribute("postList", samePropertyValuesAs(testPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
                 model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
                 model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
                 model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
-                model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
+                model().attribute("pagination", samePropertyValuesAs(testPostsPagination)),
+                model().attribute("pageType", PageType.POST_LIST)
             ));
         }
 
@@ -403,9 +407,9 @@ public class PageViewControllerTest {
 
     @Nested
     @DisplayName("GET /category/{parent}/{name}")
-    class Test_Get_SubCategoryPage {
+    class Test_Get_PostListPageOfSubCategory {
         @Test
-        @DisplayName("성공")
+        @DisplayName("성공: 하위 카테고리에 속한 게시글 페이지 요청")
         void Success_SubCategoryPage_ReturnModelAndView() throws Exception {
             // given
             given(postService.getPostsByVisibleAndCategory(eq(TEST_VISIBLE), any(CategoryDto.class), any(Pageable.class)))
@@ -425,14 +429,15 @@ public class PageViewControllerTest {
                 handler().handlerType(PageViewController.class),
                 handler().methodName("pageCategory"),
                 content().contentType(HTML_CONTENT_TYPE),
-                view().name(ViewName.CATEGORY),
+                view().name(ViewName.INDEX),
                 model().attribute("selectedCategory", samePropertyValuesAs(testChildCategory)),
                 model().attribute("postList", samePropertyValuesAs(testChildCategoryPostList)),
                 model().attribute("totalPostsCount", equalTo(totalPostsCount)),
                 model().attribute("visiblePostsCount", equalTo(visiblePostsCount)),
                 model().attribute("invisiblePostsCount", equalTo(invisiblePostsCount)),
                 model().attribute("postsCountList", samePropertyValuesAs(testPostsCountResultList)),
-                model().attribute("pagination", samePropertyValuesAs(testPostsPagination))
+                model().attribute("pagination", samePropertyValuesAs(testPostsPagination)),
+                model().attribute("pageType", equalTo(PageType.POST_LIST))
             ));
         }
 

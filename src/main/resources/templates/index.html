@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<html xmlns:th="https://www.thymeleaf.org" lang="kr"
+  th:with="currentUri=${#request.getRequestURI()}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="robots" content="nofollow">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+
+    <!--/* font */-->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noto+Sans+KR:300,400,700|Fira+Code:300,400,700&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+
+    <!--/* hljs */-->
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/styles/stackoverflow-dark.min.css">
+
+    <!--/* css */-->
+    <link rel="stylesheet" th:href="@{/static/css/main.css}">
+
+    <!--/* 페이지에 맞는 title */-->
+    <th:block th:switch="${pageType}">
+      <th:block th:case="'post/list'">
+        <th:block th:if="${selectedCategory} eq null">
+          <title th:text="${currentUri} eq @{/} ? '홈페이지' : |'전체 카테고리' 글 목록|"></title>
+        </th:block>
+        <th:block th:if="${selectedCategory} ne null">
+          <title th:text="${selectedCategory.parent} eq null
+              ? |'${selectedCategory.name}' 카테고리 글 목록|
+              : |'${selectedCategory.parent}/${selectedCategory.name}' 카테고리 글 목록|"></title>
+        </th:block>
+      </th:block>
+      <title th:case="'post/detail'" th:text="${post.title}"></title>
+      <title th:case="*">홈페이지</title>
+    </th:block>
+  </head>
+<body class="is-preload">
+  <div id="wrapper">
+    <div id="main">
+      <div class="inner">
+        <!--/* header */-->
+        <header id="header">
+          <div class="logo">
+            <a th:href="@{/}">Home</a>
+          </div>
+        </header>
+        <!--/* services - pageType 변수에 맞게 fragment를 삽입한다. */-->
+        <section class="services">
+          <th:block th:if="${pageType eq 'post/list'}">
+            <div th:replace="fragments/post-list"></div>
+          </th:block>
+          <th:block th:if="${pageType eq 'post/detail'}" >
+            <div th:replace="fragments/post-detail"></div>
+          </th:block>
+        </section>
+      </div>
+    </div>
+    <!--/* sidebar */-->
+    <div th:replace="fragments/sidebar"></div>
+  </div>
+  <script th:src="@{/static/js/vendor/browser.min.js}"></script>
+  <script th:src="@{/static/js/vendor/breakpoints.min.js}"></script>
+  <script th:src="@{/static/js/main.js}"></script>
+</body>
+</html>

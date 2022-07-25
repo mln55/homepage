@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -78,6 +79,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return new LogoutSuccessHandlerImpl(jwtTokenConfig.getName());
     }
 
+    // 정적 자원에 대한 불필요한 filter 호출을 막는다.
+    @Override
+    public void configure(WebSecurity web) throws Exception {
+        web.ignoring().antMatchers("/favicon.ico", "/robots.txt", "/static/**");
+    }
+
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
@@ -103,10 +110,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .accessDeniedHandler(accessDeniedHandlerImpl())
                 .and()
             .authorizeRequests()
-                .antMatchers("/api/categories/**").hasRole("ADMIN")
-                .antMatchers("/api/posts/**").hasRole("ADMIN")
                 .antMatchers("/api/users/login").permitAll()
-                .antMatchers("/api/**").authenticated()
+                .antMatchers("/api/**").hasRole("ADMIN")
                 .anyRequest().permitAll()
             ;
     }

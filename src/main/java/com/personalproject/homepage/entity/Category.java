@@ -13,6 +13,9 @@ import javax.persistence.UniqueConstraint;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 
+import com.personalproject.homepage.repository.CategoryRepository;
+
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -85,5 +88,17 @@ public class Category extends CommonEntity {
         if (parentCategory != null) {
             parentCategory.getCategoriesOfCategory().add(this);
         }
+    }
+
+    /**
+     * 카테고리에 등록된 게시글 수를 포함한 쿼리에 매핑될 entity 내부 클래스
+     * @see CategoryRepository#allCategoriesWithPostsCount(Boolean)
+     */
+    @Getter
+    @AllArgsConstructor
+    public static class WithPostsCount {
+        private Category category;
+
+        private Long postsCount;
     }
 }

@@ -1,9 +1,7 @@
 package com.personalproject.homepage.controller;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -18,10 +16,11 @@ import com.personalproject.homepage.config.web.PageType;
 import com.personalproject.homepage.config.web.ViewName;
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.dto.PostDto;
-import com.personalproject.homepage.dto.PostsCountByCategoryDto;
 import com.personalproject.homepage.dto.PostsPaginationDto;
 import com.personalproject.homepage.error.PageNotFoundException;
-import com.personalproject.homepage.model.PostsCountModel;
+import com.personalproject.homepage.mapper.CategoryMapper;
+import com.personalproject.homepage.mapper.PostMapper;
+import com.personalproject.homepage.service.CategoryService;
 import com.personalproject.homepage.service.PostService;
 
 import lombok.RequiredArgsConstructor;
@@ -37,36 +36,44 @@ public class PageViewController {
 
     private static final int PAGE_SIZE = 8;
 
-    private static final String KEY_TPC = "totalPostsCount";
-
-    private static final String KEY_VPC = "visiblePostsCount";
-
-    private static final String KEY_IPC = "invisiblePostsCount";
-
     private final PostService postService;
+
+    private final CategoryService categoryService;
 
     @GetMapping({"/", "/category"})
     public ModelAndView pageIndex(Pageable pageable) {
         ModelAndView mv = new ModelAndView(ViewName.INDEX);
-        List<PostDto> postList = postService.getPostsByVisible(VISIBLE, pageable);
 
+        // get post dto list
+        List<PostDto.Res> postList = postService.getPostsByVisible(VISIBLE, pageable)
+            .stream()
+            .map(PostMapper::entityToResDto)
+            .collect(Collectors.toList());
+
+        // out of bound page request -> 404
         if (postList.isEmpty() && pageable.getPageNumber() != 0) {
             log.info("포스트가 없는 페이지 요청. page: '{}'", pageable.getPageNumber());
             throw new PageNotFoundException();
         }
 
-        List<PostsCountModel> postsCountList = getPostsCountList();
-        Map<String, Long> countMap = getCountMap(postsCountList);
+        // get category dto list
+        List<CategoryDto.ResWithPostsCount> postsCountList = CategoryMapper.entityWithPostsCountListToResDtoWithPostsCountList(
+            categoryService.getAllCategoriesWithPostsCount(VISIBLE)
+        );
+
+        // pagination
+        Long totalPostsCount = postsCountList.stream().mapToLong(pc -> pc.getPostsCount()).sum();
         PostsPaginationDto postsPagination = new PostsPaginationDto(
             pageable.getPageNumber() + 1,
-            (countMap.get(KEY_VPC).intValue() - 1) / PAGE_SIZE + 1
+            (totalPostsCount.intValue() - 1) / PAGE_SIZE + 1
         );
+
         mv.addObject("selectedCategory", null);
         mv.addObject("postList", postList);
         mv.addObject("postsCountList", postsCountList);
+        mv.addObject("totalPostsCount", totalPostsCount);
         mv.addObject("pagination", postsPagination);
         mv.addObject("pageType", PageType.POST_LIST);
-        mv.addAllObjects(countMap);
         return mv;
     }
 
@@ -76,24 +83,33 @@ public class PageViewController {
         HttpServletRequest request
     ) {
 
+        // check id format
         if (!postId.matches("\\d+")) {
             log.info("형식에 맞지 않는 postId 요청. postId: '{}'", postId);
             throw new PageNotFoundException();
         }
 
         ModelAndView mv = new ModelAndView(ViewName.INDEX);
-        PostDto post = postService.getPost(Long.parseLong(postId));
+
+        // get post dto
+        PostDto.Res post = PostMapper.entityToResDto(postService.getPost(Long.parseLong(postId)));
+
+        // invisible post -> 404
         if (!post.getVisible() && !request.isUserInRole("ADMIN")) {
             log.info("비공개 포스트 요청. postId: '{}'", postId);
             throw new PageNotFoundException();
         }
 
-        List<PostsCountModel> postsCountList = getPostsCountList();
+        // get category dto list
+        List<CategoryDto.ResWithPostsCount> postsCountList = CategoryMapper.entityWithPostsCountListToResDtoWithPostsCountList(
+            categoryService.getAllCategoriesWithPostsCount(VISIBLE)
+        );
+        Long totalPostsCount = postsCountList.stream().mapToLong(pc -> pc.getPostsCount()).sum();
 
         mv.addObject("post", post);
         mv.addObject("selectedCategory", post.getCategory());
         mv.addObject("postsCountList", postsCountList);
-        mv.addAllObjects(getCountMap(postsCountList));
+        mv.addObject("totalPostsCount", totalPostsCount);
         mv.addObject("pageType", PageType.POST_DETAIL);
         return mv;
     }
@@ -105,83 +121,61 @@ public class PageViewController {
         @PathVariable String name
     ) {
         ModelAndView mv = new ModelAndView(ViewName.INDEX);
-        CategoryDto category = CategoryDto.builder()
+
+        // create req dto used by service
+        CategoryDto.NameReq categoryDto = CategoryDto.NameReq.builder()
             .name(name)
             .parent(parent)
             .build();
-        List<PostDto> postList = postService.getPostsByVisibleAndCategory(VISIBLE , category, pageable);
 
+        // get post dto list
+        List<PostDto.Res> postList = postService.getPostsByVisibleAndCategory(VISIBLE , categoryDto, pageable)
+            .stream()
+            .map(PostMapper::entityToResDto)
+            .collect(Collectors.toList());
+
+        // out ot bound page request -> 404
         if (postList.isEmpty() && pageable.getPageNumber() != 0) {
             log.info("포스트가 없는 페이지 요청. page: '{}'", pageable.getPageNumber());
             throw new PageNotFoundException();
         }
 
-        List<PostsCountModel> postsCountList = getPostsCountList();
+        // get category dto list
+        List<CategoryDto.ResWithPostsCount> postsCountList = CategoryMapper.entityWithPostsCountListToResDtoWithPostsCountList(
+            categoryService.getAllCategoriesWithPostsCount(VISIBLE)
+        );
 
-        String categoryName = category.getParent() == null ? category.getName() : category.getParent();
-        PostsPaginationDto postsPagination = new PostsPaginationDto(1, 1);
-        for (PostsCountModel pc : postsCountList) {
-            if (categoryName.equals(pc.getParent())) {
-                postsPagination = new PostsPaginationDto(pageable.getPageNumber() + 1, (pc.getVisibleCount().intValue() - 1) / PAGE_SIZE + 1);
+        // pagination
+        Long totalPostsCount = postsCountList.stream().mapToLong(pc -> pc.getPostsCount()).sum();
+        Long paginationPostsCount = 0l;
+        for (CategoryDto.ResWithPostsCount pc : postsCountList) {
+            // parent == null -> name과 비교
+            if (parent == null) {
+                if (name.equals(pc.getName())) {
+                    paginationPostsCount = pc.getPostsCount();
+                    break;
+                }
+
+            // parnet != null, parent == name -> parent, name과 비교
+            } else if (parent.equals(pc.getName())) {
+                // child list loop
+                for (CategoryDto.ResWithPostsCount cpc : pc.getChildList()) {
+                    if (name.equals(cpc.getName())) {
+                        paginationPostsCount = cpc.getPostsCount();
+                        break;
+                    }
+                }
                 break;
             }
         }
+        PostsPaginationDto postsPagination = new PostsPaginationDto(pageable.getPageNumber() + 1, (paginationPostsCount.intValue() - 1) / PAGE_SIZE + 1);
 
-        mv.addObject("selectedCategory", category);
+        mv.addObject("selectedCategory", CategoryDto.Res.builder().name(name).parent(parent).build());
         mv.addObject("postList", postList);
         mv.addObject("postsCountList", postsCountList);
         mv.addObject("pagination", postsPagination);
-        mv.addAllObjects(getCountMap(postsCountList));
+        mv.addObject("totalPostsCount", totalPostsCount);
         mv.addObject("pageType", PageType.POST_LIST);
         return mv;
-    }
-
-    private List<PostsCountModel> getPostsCountList() {
-        List<PostsCountByCategoryDto> postsCountSource = postService.getPostsCountPerCategory();
-
-        postsCountSource.sort((o1, o2) -> {
-            CategoryDto c1 = o1.getCategory();
-            CategoryDto c2 = o2.getCategory();
-            String p1 = c1.getParent();
-            String p2 = c2.getParent();
-            String n1 = c1.getName();
-            String n2 = c2.getName();
-
-            // super name
-            if (p1 == null && p2 == null) {
-                return n1.compareTo(n2);
-            // sub name
-            } else if (p1 != null && p2 != null) {
-                return p1.equals(p2) ? n1.compareTo(n2) : p1.compareTo(p2);
-            // sup name vs sub parent
-            } else {
-                return p1 == null ? n1.compareTo(p2) : p1.compareTo(n2);
-            }
-        });
-
-        ArrayList<PostsCountModel> postsCountList = new ArrayList<>();
-        PostsCountModel currentParent = null;
-        for (PostsCountByCategoryDto pcSource : postsCountSource) {
-            if (currentParent == null || !currentParent.getName().equals(pcSource.getCategory().getParent())) {
-                currentParent = new PostsCountModel(null, pcSource.getCategory().getName(), 0L, 0L);
-                postsCountList.add(currentParent);
-            } else {
-                currentParent.addChild(new PostsCountModel(pcSource));
-            }
-        }
-        return postsCountList;
-    }
-
-    private Map<String, Long> getCountMap(List<PostsCountModel> postsCountList) {
-        Map<String, Long> countMap = new HashMap<>();
-        countMap.put(KEY_TPC, 0l);
-        countMap.put(KEY_VPC, 0l);
-        countMap.put(KEY_IPC, 0l);
-        for (PostsCountModel pc : postsCountList) {
-            countMap.put(KEY_TPC, countMap.get(KEY_TPC) + pc.getCount());
-            countMap.put(KEY_VPC, countMap.get(KEY_VPC) + pc.getVisibleCount());
-            countMap.put(KEY_IPC, countMap.get(KEY_IPC) + pc.getInvisibleCount());
-        }
-        return countMap;
     }
 }

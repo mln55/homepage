@@ -1,15 +1,7 @@
 package com.personalproject.homepage.controller;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.util.List;
-
-import com.personalproject.homepage.api.ApiResult;
-import com.personalproject.homepage.dto.CategoryDto;
-import com.personalproject.homepage.dto.PostDto;
-import com.personalproject.homepage.error.ApiException;
-import com.personalproject.homepage.error.ErrorMessage;
-import com.personalproject.homepage.service.PostService;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.personalproject.homepage.api.ApiResult;
+import com.personalproject.homepage.dto.PostDto;
+import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.mapper.PostMapper;
+import com.personalproject.homepage.service.PostService;
+import com.personalproject.homepage.util.AppUtils;
+
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -31,66 +30,81 @@ public class PostRestController {
 
     private final PostService postService;
 
+    /**
+     * 모든 포스트를 요청에 맞게 반환한다.
+     * @param pageable 페이지
+     * @param strCategoryId 등록된 카테고리 아이디
+     * @param strVisible 공개 여부
+     * @return {@link PostDto.Res} List
+     */
     @GetMapping("")
-    public ApiResult<List<PostDto>> getPosts(
+    public ApiResult<List<PostDto.Res>> getPosts(
         Pageable pageable,
-        CategoryDto category,
-        @RequestParam(required = false) String visible
+        @RequestParam(value = "categoryid", required = false) String strCategoryId,
+        @RequestParam(value = "visible", required = false) String strVisible
     ) {
-        return ApiResult.success(invokeGetPosts(pageable, category, visible));
+        Long categoryId = strCategoryId == null ? null : AppUtils.parseParamId(strCategoryId);
+        Boolean visible = AppUtils.parseBoolean(strVisible);
+        List<Post> entityList = null;
+        if (visible == null) {
+            entityList = categoryId == null
+                ? postService.getPosts(pageable)
+                : postService.getPostsByCategory(categoryId, pageable);
+        } else {
+            entityList = categoryId == null
+                ? postService.getPostsByVisible(visible, pageable)
+                : postService.getPostsByVisibleAndCategory(visible, categoryId, pageable);
+        }
+        List<PostDto.Res> dtoList = entityList.stream()
+            .map(PostMapper::entityToResDto)
+            .collect(Collectors.toList());
+        return ApiResult.success(dtoList);
     }
 
+    /**
+     * 포스트를 생성하고 결과를 반환한다.
+     * @param post {@link PostDto.Req}
+     * @return {@link PostDto.Res}
+     */
     @PostMapping("")
-    public ApiResult<PostDto> createPost(@RequestBody(required = false) PostDto post) {
-        return ApiResult.success(postService.createPost(post));
+    public ApiResult<PostDto.Res> createPost(@RequestBody(required = false) PostDto.Req post) {
+        Post entity = postService.createPost(post);
+        return ApiResult.success(PostMapper.entityToResDto(entity));
     }
 
+    /**
+     * id에 맞는 포스트를 반환한다.
+     * @param id 포스트 id
+     * @return {@link PostDto.Res}
+     */
     @GetMapping("/{id}")
-    public ApiResult<PostDto> getPost(@PathVariable String id) {
-        return ApiResult.success(postService.getPost(parseId(id)));
+    public ApiResult<PostDto.Res> getPost(@PathVariable String id) {
+        Post entity = postService.getPost(AppUtils.parseParamId(id));
+        return ApiResult.success(PostMapper.entityToResDto(entity));
     }
 
+    /**
+     * id에 맞는 포스트를 수정한다.
+     * @param id 포스트 id
+     * @param post {@link PostDto.Req}
+     * @return {@link PostDto.Res}
+     */
     @PatchMapping("/{id}")
-    public ApiResult<PostDto> updatePost(
+    public ApiResult<PostDto.Res> updatePost(
         @PathVariable String id,
-        @RequestBody(required = false) PostDto post
+        @RequestBody(required = false) PostDto.Req post
     ) {
-        return ApiResult.success(postService.updatePost(parseId(id), post));
+        Post entity = postService.updatePost(AppUtils.parseParamId(id), post);
+        return ApiResult.success(PostMapper.entityToResDto(entity));
     }
 
+    /**
+     * id에 맞는 포스트를 삭제한다.
+     * @param id 포스트 아이디
+     * @return Boolean, {@code true}
+     */
     @DeleteMapping("/{id}")
     public ApiResult<Boolean> deletePost(@PathVariable String id) {
-        return ApiResult.success(postService.deletePost(parseId(id)));
-    }
-
-    private List<PostDto> invokeGetPosts(
-        Pageable pageable,
-        CategoryDto category,
-        @RequestParam String visible
-    ) {
-        if (visible == null) {
-            return category.getName() == null
-                ? postService.getPosts(pageable)
-                : postService.getPostsByCategory(category, pageable);
-        } else {
-            Boolean boolVisible = "true".equalsIgnoreCase(visible) ? Boolean.TRUE
-                : "false".equalsIgnoreCase(visible) ? Boolean.FALSE
-                : null;
-            checkArgument(boolVisible != null, ErrorMessage.INVALID_QUERY_STRING.getMessage("visible", "true, false"));
-            return category.getName() == null
-                ? postService.getPostsByVisible(boolVisible, pageable)
-                : postService.getPostsByVisibleAndCategory(boolVisible, category, pageable);
-        }
-    }
-
-    private long parseId(String idStr) {
-        try {
-            float idFloat = Float.parseFloat(idStr);
-            checkArgument(idFloat == Math.floor(idFloat) && idFloat > 0 && idFloat <= Long.MAX_VALUE,
-                ErrorMessage.INVALID_PATH_PARAM.getMessage("id"));
-            return (long) idFloat;
-        } catch (NumberFormatException e) {
-            throw new ApiException(ErrorMessage.INVALID_PATH_PARAM, "id");
-        }
+        return ApiResult.success(postService.deletePost(AppUtils.parseParamId(id)));
     }
 }

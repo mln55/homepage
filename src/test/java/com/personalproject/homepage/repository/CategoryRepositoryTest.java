@@ -5,9 +5,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.util.List;
 import java.util.Optional;
-
-import com.personalproject.homepage.entity.Category;
-import com.personalproject.homepage.helper.MockEntity;
+import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +16,10 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
+
+import com.personalproject.homepage.entity.Category;
+import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.helper.EntityCreator;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
@@ -30,22 +32,22 @@ public class CategoryRepositoryTest {
 
     private final CategoryRepository categoryRepository;
 
+    private final PostRepository postRepository;
+
     @Autowired
-    public CategoryRepositoryTest(CategoryRepository categoryRepository) {
+    public CategoryRepositoryTest(CategoryRepository categoryRepository, PostRepository postRepository) {
         this.categoryRepository = categoryRepository;
+        this.postRepository = postRepository;
     }
 
     @BeforeEach
     void resetPersist() {
-        savedParentCategory1 = MockEntity.mock(Category.class);
-        savedParentCategory1.updateInfo("savedParent1", null);
-        savedParentCategory2 = MockEntity.mock(Category.class);
-        savedParentCategory2.updateInfo("savedParent2", null);
+        savedParentCategory1 = EntityCreator.category(null, "savedParent1", null);
+        savedParentCategory2 = EntityCreator.category(null, "savedParent2", null);
         categoryRepository.save(savedParentCategory1);
         categoryRepository.save(savedParentCategory2);
 
-        savedChildCategory = MockEntity.mock(Category.class);
-        savedChildCategory.updateInfo("savedChild", savedParentCategory1);
+        savedChildCategory = EntityCreator.category(null, "savedChild", savedParentCategory1);
         categoryRepository.save(savedChildCategory);
     }
 
@@ -56,8 +58,7 @@ public class CategoryRepositoryTest {
         @DisplayName("성공: 최상위 카테고리를 추가한다.")
         void Success_TopLevelCategory_Create() {
             // given
-            Category category = MockEntity.mock(Category.class);
-            category.updateInfo("category", null);
+            Category category = EntityCreator.category(null, "category", null);
 
             // when
             categoryRepository.save(category);
@@ -78,8 +79,7 @@ public class CategoryRepositoryTest {
                         service 객체에서 반드시 검증을 거쳐야 한다.
             ********************************************************************************/
             // given - savedParentCategory1
-            Category duplicatedCategory = MockEntity.mock(Category.class);
-            duplicatedCategory.updateInfo(savedParentCategory1.getName(), null);
+            Category duplicatedCategory = EntityCreator.category(null, savedParentCategory1.getName(), null);
 
             // when
             categoryRepository.save(duplicatedCategory);
@@ -97,8 +97,7 @@ public class CategoryRepositoryTest {
         @DisplayName("성공: 하위 카테고리를 추가한다.")
         void Success_SubCategoryOfExistentCategory_Create() {
             // given - savedParentCategory1
-            Category childCategory = MockEntity.mock(Category.class);
-            childCategory.updateInfo("child", savedParentCategory1);
+            Category childCategory = EntityCreator.category(null, "child", savedParentCategory1);
 
             // when
             categoryRepository.save(childCategory);
@@ -113,11 +112,9 @@ public class CategoryRepositoryTest {
         @DisplayName("실패: 존재하지 않는 카테고리에 하위 카테고리 추가 - throw Exception")
         void Fail_SubCategoryOfNonExistentCategory_ThrowException() {
             // given
-            Category parentCategory = MockEntity.mock(Category.class, 0L); // 존재하지 않는 카테고리
-            parentCategory.updateInfo("parent", null);
+            Category parentCategory = EntityCreator.category(0l, "parent", null); // 존재하지 않는 카테고리
 
-            Category childCategory = MockEntity.mock(Category.class);
-            childCategory.updateInfo("child", parentCategory);
+            Category childCategory = EntityCreator.category(null, "child", parentCategory);
 
             // when
             Throwable thrown = catchThrowable(() -> categoryRepository.save(childCategory));
@@ -131,8 +128,7 @@ public class CategoryRepositoryTest {
         @DisplayName("실패: 중복된 하위 카테고리 추가 - throw Exception")
         void Fail_DuplicatedSubCategoryOfOneCategory_ThrowException() {
             // given - savedParentCategory1
-            Category duplicatedChildCategory = MockEntity.mock(Category.class);
-            duplicatedChildCategory.updateInfo("savedChild", savedParentCategory1);
+            Category duplicatedChildCategory = EntityCreator.category(null, "savedChild", savedParentCategory1);
 
             // when
             Throwable thrown = catchThrowable(() -> categoryRepository.save(duplicatedChildCategory));
@@ -189,40 +185,49 @@ public class CategoryRepositoryTest {
         }
 
         @Test
-        @DisplayName("성공: 모든 최상위 카테고리를 List로 반환한다.")
-        void Success_AllTopLevelCategory_ReturnCategoryList() {
-            // given - parent1 and parent2 at resetPersist()
+        @DisplayName("성공: 카테고리를 포스트 개수와 함께 반환한다.")
+        void Success_CategoryWithPostsCount_ReturnObjectList() {
+            // given
+            IntStream.rangeClosed(1, 10)
+                .forEach(i -> {
+                    Post p = EntityCreator.post(null, i % 2 == 0 ? savedChildCategory : savedParentCategory1, "title", "content", "desc", true);
+                    postRepository.save(p);
+                });
 
             // when
-            List<Category> categoryList = categoryRepository.findAllByParentCategoryIsNull();
+            List<Category.WithPostsCount> categoryPostsCountList = categoryRepository.allCategoriesWithPostsCount(null);
 
             // then
-            assertThat(categoryList)
-                .size()
-                .isEqualTo(2);
-            assertThat(categoryList)
-                .flatMap(Category::getParentCategory)
-                .containsExactly(null, null);
+            assertThat(categoryPostsCountList).size().isEqualTo(3);
+            assertThat(categoryPostsCountList)
+                .extracting("category.idx", "category.name")
+                .doesNotHaveDuplicates();
+            assertThat(categoryPostsCountList)
+                .extracting("postsCount")
+                .containsExactly(5l, 0l, 5l);
         }
 
         @Test
-        @DisplayName("성공: 카테고리의 모든 하위 카테고리를 List로 반환한다.")
-        void Success_AllSubCategoryOfOneCategory_ReturnCategoryList() {
-            // given - child of parent1 at resetPersist()
-            Category childCategory = MockEntity.mock(Category.class);
-            childCategory.updateInfo("newSavedChild", savedParentCategory1);
-            categoryRepository.save(childCategory);
+        @DisplayName("성공: 카테고리를 visible 포스트 개수와 함께 반환한다.")
+        void Success_CategoryWithVisiblePostsCount_ReturnObjectList() {
+            // given
+            IntStream.rangeClosed(1, 10)
+                .forEach(i -> {
+                    Post p = EntityCreator.post(null, i % 2 == 0 ? savedChildCategory : savedParentCategory1, "title", "content", "desc", true);
+                    postRepository.save(p);
+                });
 
             // when
-            List<Category> categoryList = categoryRepository.findAllByParentCategory(savedParentCategory1);
+            List<Category.WithPostsCount> categoryPostsCountList = categoryRepository.allCategoriesWithPostsCount(true);
 
             // then
-            assertThat(categoryList)
-                .size()
-                .isEqualTo(2);
-            assertThat(categoryList)
-                .flatMap(Category::getName)
-                .containsExactly("savedChild", "newSavedChild");
+            assertThat(categoryPostsCountList).size().isEqualTo(3);
+            assertThat(categoryPostsCountList)
+                .extracting("category.idx", "category.name")
+                .doesNotHaveDuplicates();
+            assertThat(categoryPostsCountList)
+                .extracting("postsCount")
+                .containsExactly(5l, 0l, 5l);
         }
     }
 

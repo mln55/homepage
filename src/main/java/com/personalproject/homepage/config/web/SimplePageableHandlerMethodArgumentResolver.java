@@ -53,7 +53,7 @@ public class SimplePageableHandlerMethodArgumentResolver implements HandlerMetho
         }
 
         if (isThrown) {
-            throw new ApiException(ErrorMessage.INVALID_QUERY_STRING, "page", "1이상의 정수");
+            throw new ApiException(ErrorMessage.INVALID_PARAM_INFO, "page", "1이상의 정수");
         }
 
         --page; // page는 0부터 시작

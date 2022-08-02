@@ -11,7 +11,6 @@ import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import com.personalproject.homepage.config.web.CategoryDtoHandlerMethodArgumentResolver;
 import com.personalproject.homepage.config.web.SimplePageableHandlerMethodArgumentResolver;
 import com.personalproject.homepage.config.web.ViewPageModelHandlerInterceptor;
 
@@ -48,17 +47,11 @@ public class WebConfig implements WebMvcConfigurer {
     public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
         // org.springframework.data.domain.Pageable에 대한 argument resolver를 등록한다.
         resolvers.add(simplePageaHandlerMethodArgumentResolver());
-        resolvers.add(categoryDtoHandlerMethodArgumentResolver());
     }
 
     @Bean
     public HandlerMethodArgumentResolver simplePageaHandlerMethodArgumentResolver() {
         return new SimplePageableHandlerMethodArgumentResolver();
-    }
-
-    @Bean
-    public HandlerMethodArgumentResolver categoryDtoHandlerMethodArgumentResolver() {
-        return new CategoryDtoHandlerMethodArgumentResolver();
     }
 
     @Bean

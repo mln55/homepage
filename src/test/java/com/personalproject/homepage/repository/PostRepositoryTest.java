@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -23,8 +22,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
-import com.personalproject.homepage.entity.groupby.PostsCountByCategory;
-import com.personalproject.homepage.helper.MockEntity;
+// import com.personalproject.homepage.helper.MockEntity;
+import com.personalproject.homepage.helper.EntityCreator;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
@@ -56,20 +55,16 @@ public class PostRepositoryTest {
         // parent
         //  └ child
 
-        savedParentCategory = MockEntity.mock(Category.class);
-        savedParentCategory.updateInfo("parent", null);
+        savedParentCategory = EntityCreator.category(null, "parent", null);
         categoryRepository.save(savedParentCategory);
 
-        savedChildCategory = MockEntity.mock(Category.class);
-        savedChildCategory.updateInfo("child", savedParentCategory);
+        savedChildCategory = EntityCreator.category(null, "child", savedParentCategory);
         categoryRepository.save(savedChildCategory);
 
-        savedChildCategory2 = MockEntity.mock(Category.class);
-        savedChildCategory2.updateInfo("child2", savedParentCategory);
+        savedChildCategory2 = EntityCreator.category(null, "child2", savedParentCategory);
         categoryRepository.save(savedChildCategory2);
 
-        savedPost = MockEntity.mock(Post.class);
-        savedPost.updateInfo(savedChildCategory, "title", "content", "desc", true);
+        savedPost = EntityCreator.post(null, savedChildCategory, "title", "content", "desc", true);
         postRepository.save(savedPost);
     }
 
@@ -80,8 +75,7 @@ public class PostRepositoryTest {
         @DisplayName("성공: 포스트를 추가한다.")
         void Success_PostWithCategory_Create() {
             // given - savedChildCategory
-            Post post = MockEntity.mock(Post.class);
-            post.updateInfo(savedChildCategory, "title", "content", "desc", true);
+            Post post = EntityCreator.post(null, savedChildCategory, "title", "content", "desc", true);
 
             // when
             Post newPost = postRepository.save(post);
@@ -119,8 +113,7 @@ public class PostRepositoryTest {
         void Success_PostsPerPage_ReturnPostList() {
             // given - total 11 posts including savedPost
             for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + i, true);
+                Post p = EntityCreator.post(null, savedChildCategory, "title" + i, "content" + i, "desc" + i, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -144,8 +137,7 @@ public class PostRepositoryTest {
             // given - total 11 posts but 6 are visible including savedPost
             Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(null, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
+                Post p = EntityCreator.post(null, savedChildCategory, "title" + i, "content" + i, "desc" + i, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -165,38 +157,11 @@ public class PostRepositoryTest {
         }
 
         @Test
-        @DisplayName("성공: 페이지에 맞는 visible == false인 List<Post>를 반환한다.")
-        void Success_PostsInvisiblePerPage_ReturnPostList() {
-            // given - total 11 posts but 5 are invisible including savedPost
-            Boolean visible = false;
-            for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(null, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
-                postRepository.save(p);
-                try {
-                    Thread.sleep(30);
-                } catch (Exception e) {/** empty */}
-            }
-
-            // when
-            List<Post> postList = postRepository.findAllByVisible(visible, testPageable);
-
-            // then
-            assertThat(postList)
-                .allMatch(p -> !p.getVisible())
-                .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, TEST_SIZE)
-                .size()
-                .isEqualTo(5);
-        }
-
-        @Test
         @DisplayName("성공: 카테고리, 페이지에 맞는 List<Post>를 반환한다.")
         void Success_PostsByCategoryPerPage_ReturnPostList() {
             // given - total 11 posts including savedPost in same category
             for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, true);
+                Post p = EntityCreator.post(null, savedChildCategory, "title" + i, "content" + i, "desc" + i, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -221,8 +186,7 @@ public class PostRepositoryTest {
             // given - total 10 posts but 6 are visible in savedChildCategory
             Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
+                Post p = EntityCreator.post(null, savedChildCategory, "title" + i, "content" + i, "desc" + i, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -242,40 +206,11 @@ public class PostRepositoryTest {
         }
 
         @Test
-        @DisplayName("성공: 카테고리, 페이지에 맞는 visible == false인 List<Post>를 반환한다.")
-        void Success_PostsIsInvisibleByCategoryPerPage_ReturnPostList() {
-            // given - total 10 posts but 5 are invisible in savedChildCategory
-            Boolean visible = false;
-            for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
-                postRepository.save(p);
-                try {
-                    Thread.sleep(30);
-                } catch (Exception e) {/** empty */}
-            }
-
-            // when
-            List<Post> postList = postRepository.findAllByVisibleAndCategory(visible, savedChildCategory, testPageable);
-
-            // then
-            assertThat(postList)
-                .allMatch(p -> p.getCategory().equals(savedChildCategory) && !p.getVisible())
-                .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, TEST_SIZE)
-                .size()
-                .isEqualTo(5);
-        }
-
-
-        @Test
-        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 포스트 리스트를 반환한다.")
+        @DisplayName("성공: 상위 카테고리에 속한 포스트 리스트를 반환한다.")
         void Success_PostsByParentCategoryPerPage_ReturnPostList() {
             // given - total 11 posts including savedPost in categories of parent category
             for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(i % 2 == 0 ? savedChildCategory : savedChildCategory2,
-                    "title" + i, "content" + i, "desc" + 1, true);
+                Post p = EntityCreator.post(null, i % 2 == 0 ? savedChildCategory : savedChildCategory2, "title" + i, "content" + i, "desc" + i, true);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -283,7 +218,7 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByCategory_ParentCategory(savedParentCategory, testPageable);
+            List<Post> postList = postRepository.findAllIncludeChildCategory(savedParentCategory, testPageable);
 
             // then
             assertThat(postList)
@@ -295,14 +230,12 @@ public class PostRepositoryTest {
         }
 
         @Test
-        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 visible 포스트 리스트를 반환한다.")
+        @DisplayName("성공: 상위 카테고리에 속한 visible 포스트 리스트를 반환한다.")
         void Success_PostsIsVisibleByParentCategoryPerPage_ReturnPostList() {
             // given - total 6 visible posts including savedPost in categories of parent category
             Boolean visible = true;
             for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(i % 2 == 0 ? savedChildCategory : savedChildCategory2,
-                    "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
+                Post p = EntityCreator.post(null, i % 2 == 0 ? savedChildCategory : savedChildCategory2, "title" + i, "content" + i, "desc" + i, i % 2 == 0);
                 postRepository.save(p);
                 try {
                     Thread.sleep(30);
@@ -310,7 +243,7 @@ public class PostRepositoryTest {
             }
 
             // when
-            List<Post> postList = postRepository.findAllByVisibleAndCategory_ParentCategory(visible, savedParentCategory, testPageable);
+            List<Post> postList = postRepository.findAllVisibleIncludeChildCategory(visible, savedParentCategory, testPageable);
 
             // then
             assertThat(postList)
@@ -319,70 +252,6 @@ public class PostRepositoryTest {
                 .hasSizeBetween(0, TEST_SIZE)
                 .size()
                 .isEqualTo(6);
-        }
-
-        @Test
-        @DisplayName("성공: 상위 카테고리의 하위 카테고리에 속한 invisible 포스트 리스트를 반환한다.")
-        void Success_PostsIsInVisibleByParentCategoryPerPage_ReturnPostList() {
-            // given - total 5 invisible posts in categories of parent category
-            Boolean visible = false;
-            for (int i = 0; i < 10; ++i) {
-                Post p = MockEntity.mock(Post.class);
-                p.updateInfo(savedChildCategory, "title" + i, "content" + i, "desc" + 1, i % 2 == 0);
-                postRepository.save(p);
-                try {
-                    Thread.sleep(30);
-                } catch (Exception e) {/** empty */}
-            }
-
-            // when
-            List<Post> postList = postRepository.findAllByVisibleAndCategory_ParentCategory(visible, savedParentCategory, testPageable);
-
-            // then
-            assertThat(postList)
-                .allMatch(p -> p.getCategory().getParentCategory().equals(savedParentCategory) && !p.getVisible())
-                .isSortedAccordingTo(createAtDescComp)
-                .hasSizeBetween(0, TEST_SIZE)
-                .size()
-                .isEqualTo(5);
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리별 포스트 개수를 반환한다.")
-        void Success_CountPostsPerCategory_ReturnObjectList() {
-            // given - savedChildCategory, savedChildCategory2
-            // 6 posts in first, 5 in second
-            Boolean visible = true;
-            IntStream.rangeClosed(1, 10)
-                .forEach(i -> {
-                    Post p = MockEntity.mock(Post.class);
-                    p.updateInfo(i % 2 == 1 ? savedChildCategory : savedChildCategory2,
-                        "title", "content", "desc", visible);
-                    postRepository.save(p);
-                });
-
-            // when
-            List<PostsCountByCategory> postCountList = postRepository.countAllGroupByCategory();
-
-            // then
-            assertThat(postCountList).size().isEqualTo(3);
-            assertThat(postCountList)
-                .extracting("category")
-                .doesNotHaveDuplicates();
-            assertThat(postCountList).allMatch(pc ->
-                (
-                    pc.getCategory().equals(savedParentCategory)
-                    && pc.getVisibleCount() == 0 && pc.getInvisibleCount() == 0
-                ) ||
-                (
-                    pc.getCategory().equals(savedChildCategory)
-                    && pc.getVisibleCount() == 6 && pc.getInvisibleCount() == 0
-                ) ||
-                (
-                    pc.getCategory().equals(savedChildCategory2)
-                    && pc.getVisibleCount() == 5 && pc.getInvisibleCount() == 0
-                )
-            );
         }
     }
 

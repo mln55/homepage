@@ -44,7 +44,6 @@ public class Post extends CommonEntity {
             null check는 create시 수행한다.
         ********************************************************************************/
         checkArgument(category != null, ErrorMessage.NOT_ALLOWED_NULL.getMessage("카테고리"));
-        checkArgument(category.getParentCategory() != null, ErrorMessage.NOT_ALLOWED_TOPLEVEL_POST.getMessage());
         this.category = category;
         this.title = title;
         this.content = content;

@@ -7,6 +7,8 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.ResultMatcher.matchAll;
@@ -14,7 +16,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.handler;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -22,6 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -37,8 +39,11 @@ import org.springframework.test.web.servlet.ResultActions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalproject.homepage.config.CustomUnitTestSecurityConfig;
 import com.personalproject.homepage.dto.CategoryDto;
+import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.error.ApiException;
 import com.personalproject.homepage.error.ErrorMessage;
+import com.personalproject.homepage.helper.DtoCreator;
+import com.personalproject.homepage.helper.EntityCreator;
 import com.personalproject.homepage.service.CategoryService;
 
 @WebMvcTest(CategoryRestController.class)
@@ -49,32 +54,31 @@ public class CategoryRestControllerTest {
 
     private static final String ROOT = "/api/categories";
     private static final String JSON_CONTENT_TYPE = "application/json;charset=utf8";
-    private static final String QUERY_STRING_LVL = "lvl";
-    private static final String QUERY_STRING_NAME = "name";
+    private static final String QUERY_STRING_COUNT = "count";
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
-    private static final CategoryDto testTopLevelCategory = CategoryDto.builder().name("name").build();
-    private static final CategoryDto testSubCategory = CategoryDto.builder().name("name").parent("parent").build();
-    private static final List<CategoryDto> allCategoryTestList = List.of(
-        CategoryDto.builder().name("p1").build(),
-        CategoryDto.builder().name("p1").parent("p1").build(),
-        CategoryDto.builder().name("c1").parent("p1").build(),
-        CategoryDto.builder().name("c2").parent("p1").build()
-    );
-    private static final List<CategoryDto> topCategoryTestList = List.of(
-        CategoryDto.builder().name("p1").build(),
-        CategoryDto.builder().name("p2").build(),
-        CategoryDto.builder().name("p3").build()
-    );
-    private static final List<CategoryDto> subCategoryTestList = List.of(
-        CategoryDto.builder().name("c1").parent("p1").build(),
-        CategoryDto.builder().name("c2").parent("p1").build(),
-        CategoryDto.builder().name("c3").parent("p1").build()
-    );
+    private static Category testTopLevelCategory;
+    private static Category testSubCategory;
+    private static List<Category> allCategoryTestList;
 
     @Autowired private MockMvc mockMvc;
 
-    @MockBean CategoryService categoryService;
+    @MockBean private CategoryService categoryService;
+
+    @BeforeEach
+    void resetMember() {
+
+        testTopLevelCategory = EntityCreator.category(99l, "parent", null);
+        testSubCategory = EntityCreator.category(100l, "name", testTopLevelCategory);
+
+        Category p1 = EntityCreator.category(101l, "p1", null);
+        allCategoryTestList = List.of(
+            p1,
+            EntityCreator.category(102l, "c1", p1),
+            EntityCreator.category(103l, "c2", p1),
+            EntityCreator.category(104l, "c3", p1)
+        );
+    }
 
     @Nested
     @DisplayName("GET /api/categories")
@@ -105,144 +109,36 @@ public class CategoryRestControllerTest {
         }
 
         @Test
-        @DisplayName("성공: 모든 최상위 카테고리를 조회한다.")
-        void Success_GetTopLevelCategories_ReturnApiResultOfDtoList() throws Exception {
+        @DisplayName("성공: 모든 카테고리를 포스트 개수와 함께 조회한다.")
+        void Success_GetCategoriesWithPostsCount_ReturnApiResultOfDtoList() throws Exception {
             // given - topCategoryTestList
-            given(categoryService.getAllTopLevelCategories()).willReturn(topCategoryTestList);
+            Boolean visible = null;
+            Category.WithPostsCount pc = new Category.WithPostsCount(testTopLevelCategory, 3l);
+            List<Category.WithPostsCount> entityList = List.of(
+                pc,
+                new Category.WithPostsCount(testSubCategory, 5l)
+            );
+            given(categoryService.getAllCategoriesWithPostsCount(eq(visible))).willReturn(entityList);
 
             // when
             ResultActions result = mockMvc.perform(get(ROOT)
-                .param(QUERY_STRING_LVL, "top")
+                .queryParam(QUERY_STRING_COUNT, "post")
             );
 
             // then
-            verify(categoryService).getAllTopLevelCategories();
+            verify(categoryService).getAllCategoriesWithPostsCount(eq(visible));
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(CategoryRestController.class),
-                handler().methodName("getCategories"),
+                handler().methodName("getCategoriesWithCount"),
                 content().contentType(JSON_CONTENT_TYPE),
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", is(topCategoryTestList.size())),
-                jsonPath("$.response[?(@.name == null)]", is(empty())),
-                jsonPath("$.response[?(@.parent != null)]", is(empty()))
-            ));
-        }
-
-        @Test
-        @DisplayName("성공: 카테고리의 모든 하위 카테고리를 조회한다.")
-        void Success_GetSubCategories_ReturnApiResultOfDtoList() throws Exception {
-            // given
-            given(categoryService.getAllSubCategoriesOf(any(CategoryDto.class))).willReturn(subCategoryTestList);
-
-            // when
-            ResultActions result =
-            mockMvc.perform(get(ROOT)
-                .param(QUERY_STRING_LVL, "sub")
-                .param(QUERY_STRING_NAME, "p1")
-            );
-
-            // then
-            verify(categoryService).getAllSubCategoriesOf(any(CategoryDto.class));
-            result.andExpect(matchAll(
-                status().isOk(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("getCategories"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(true)),
-                jsonPath("$.error", is(nullValue())),
-                jsonPath("$.response", is(not(empty()))),
-                jsonPath("$.response.length()", is(subCategoryTestList.size())),
-                jsonPath("$.response[?(@.name == null)]", is(empty())),
-                jsonPath("$.response[?(@.parent == null)]", is(empty()))
-            ));
-        }
-
-        @Test
-        @DisplayName("실패: 최상위 카테고리 조회 시 유효하지 않은 query string - lvl")
-        void Fail_InvalidQuery_GetTopLevelCategories_ReturnApiResultOfException() throws Exception {
-            // given
-            ErrorMessage errorMessage = ErrorMessage.INVALID_QUERY_STRING;
-            String message = errorMessage.getMessage("lvl", "top, sub");
-            int status = errorMessage.getStatus().value();
-
-            // when
-            ResultActions result = mockMvc.perform(get(ROOT)
-                .param(QUERY_STRING_LVL, "invalid")
-            );
-
-            // then
-            result.andExpect(matchAll(
-                status().isBadRequest(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("getCategories"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(false)),
-                jsonPath("$.response", is(nullValue())),
-                jsonPath("$.error", is(notNullValue())),
-                jsonPath("$.error.message", is(message)),
-                jsonPath("$.error.status", is(status))
-            ));
-        }
-
-        @Test
-        @DisplayName("실패: 하위 카테고리 조회 시 유효하지 않은 query string - name")
-        void Fail_InvalidQuery_GetSubCategories_ReturnApiResultOfException() throws Exception {
-            // given
-            ErrorMessage errorMessage = ErrorMessage.EMPTY_QUERY_STRING;
-            String message = errorMessage.getMessage("name");
-            int status = errorMessage.getStatus().value();
-
-            // when
-            ResultActions result = mockMvc.perform(get(ROOT)
-                .param(QUERY_STRING_LVL, "sub")
-                .param(QUERY_STRING_NAME, " ") // empty string
-            );
-
-            // then
-            result.andExpect(matchAll(
-                status().isBadRequest(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("getCategories"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(false)),
-                jsonPath("$.response", is(nullValue())),
-                jsonPath("$.error", is(notNullValue())),
-                jsonPath("$.error.message", is(message)),
-                jsonPath("$.error.status", is(status))
-            ));
-        }
-
-        @Test
-        @DisplayName("실패: 존재하지 않는 카테고리의 하위 카테고리 조회")
-        void Fail_NoParent_GetSubCategories_ReturnApiResultOfException() throws Exception {
-            // given
-            ErrorMessage errorMessage = ErrorMessage.NON_EXISTENT;
-            String message = errorMessage.getMessage("상위 카테고리");
-            int status = errorMessage.getStatus().value();
-            given(categoryService.getAllSubCategoriesOf(any(CategoryDto.class)))
-                .willThrow(new ApiException(errorMessage, "상위 카테고리"));
-
-            // when
-            ResultActions result = mockMvc.perform(get(ROOT)
-                .param(QUERY_STRING_LVL, "sub")
-                .param(QUERY_STRING_NAME, "nonExistent")
-            );
-
-            // then
-            verify(categoryService).getAllSubCategoriesOf(any(CategoryDto.class));
-            result.andExpect(matchAll(
-                status().isBadRequest(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("getCategories"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(false)),
-                jsonPath("$.response", is(nullValue())),
-                jsonPath("$.error", is(notNullValue())),
-                jsonPath("$.error.message", is(message)),
-                jsonPath("$.error.status", is(status))
+                jsonPath("$.response.length()", is(1)),
+                jsonPath("$.response[?(@.categoryId == null)]", is(empty())),
+                jsonPath("$.response[?(@.postsCount == null)]", is(empty())),
+                jsonPath("$.response[0].childList.length()", is(1))
             ));
         }
     }
@@ -254,17 +150,19 @@ public class CategoryRestControllerTest {
         @DisplayName("성공: 카테고리를 추가한다.")
         void Success_NewCategory_ReturnApiResultOfDto() throws Exception {
             // given - testTOplevelCategory
-            CategoryDto category = testTopLevelCategory;
-            given(categoryService.createCategory(any(CategoryDto.class))).willReturn(category);
+            Category category = testTopLevelCategory;
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(testTopLevelCategory.getName(), null);
+
+            given(categoryService.createCategory(any(CategoryDto.Req.class))).willReturn(category);
 
             // when
             ResultActions result = mockMvc.perform(post(ROOT)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(category))
+                .content(objectMapper.writeValueAsString(inputDto))
             );
 
             // then
-            verify(categoryService).createCategory(any(CategoryDto.class));
+            verify(categoryService).createCategory(any(CategoryDto.Req.class));
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(CategoryRestController.class),
@@ -274,7 +172,7 @@ public class CategoryRestControllerTest {
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(notNullValue())),
                 jsonPath("$.response.name", is(category.getName())),
-                jsonPath("$.response.parent", is(category.getParent()))
+                jsonPath("$.response.parent", is(nullValue()))
             ));
         }
 
@@ -282,21 +180,22 @@ public class CategoryRestControllerTest {
         @DisplayName("실패: 같은 카테고리를 추가")
         void Fail_ExistentCategory_ReturnApiResultOfException() throws Exception {
             // given - testTopLevelCategory
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto("duplicated", null);
             ErrorMessage errorMessage = ErrorMessage.ALREADY_EXISTENT;
             String message = errorMessage.getMessage("카테고리");
             int status = errorMessage.getStatus().value();
-            given(categoryService.createCategory(any(CategoryDto.class))).willThrow(
+            given(categoryService.createCategory(any(CategoryDto.Req.class))).willThrow(
                 new ApiException(errorMessage, "카테고리")
             );
 
             // when
             ResultActions result = mockMvc.perform(post(ROOT)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testTopLevelCategory))
+                .content(objectMapper.writeValueAsString(inputDto))
             );
 
             // when
-            verify(categoryService).createCategory(any(CategoryDto.class));
+            verify(categoryService).createCategory(any(CategoryDto.Req.class));
             result.andExpect(matchAll(
                 status().isBadRequest(),
                 handler().handlerType(CategoryRestController.class),
@@ -314,21 +213,22 @@ public class CategoryRestControllerTest {
         @DisplayName("실패: 존재하지 않는 상위 카테고리에 카테고리 추가")
         void Fail_NonExistentParent_ReturnApiResultOfException() throws Exception {
             // given - testSubCategory
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto("name", -1l);
             ErrorMessage errorMessage = ErrorMessage.NON_EXISTENT;
             String message = errorMessage.getMessage("상위 카테고리");
             int status = errorMessage.getStatus().value();
-            given(categoryService.createCategory(any(CategoryDto.class))).willThrow(
+            given(categoryService.createCategory(any(CategoryDto.Req.class))).willThrow(
                 new ApiException(errorMessage, "상위 카테고리")
             );
 
             // when
             ResultActions result = mockMvc.perform(post(ROOT)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testSubCategory))
+                .content(objectMapper.writeValueAsString(inputDto))
             );
 
             // then
-            verify(categoryService).createCategory(any(CategoryDto.class));
+            verify(categoryService).createCategory(any(CategoryDto.Req.class));
             result.andExpect(matchAll(
                 status().isBadRequest(),
                 handler().handlerType(CategoryRestController.class),
@@ -344,24 +244,26 @@ public class CategoryRestControllerTest {
     }
 
     @Nested
-    @DisplayName("PATCH /api/categories/{name}")
+    @DisplayName("PATCH /api/categories/{id}")
     class Test_Patch_TopLevelCategory {
         @Test
-        @DisplayName("성공: 최상위 카테고리를 수정한다.")
-        void Success_PatchTopLevelCategory_ReturnApiResultOfDto() throws Exception {
+        @DisplayName("성공: 카테고리를 수정한다.")
+        void Success_PatchCategory_ReturnApiResultOfDto() throws Exception {
             // given
-            CategoryDto updatedCategory = CategoryDto.builder().name("changed").build();
-            given(categoryService.updateCategory(any(CategoryDto.class), any(CategoryDto.class))).willReturn(updatedCategory);
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto("changed", null);
+            Category changedCategory = testSubCategory;
+            changedCategory.updateInfo("changed", null);
+
+            given(categoryService.updateCategory(anyLong(), any(CategoryDto.Req.class))).willReturn(changedCategory);
 
             // when
-            ResultActions result = mockMvc.perform(patch(ROOT + "/name")
+            ResultActions result = mockMvc.perform(patch(ROOT + "/1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(updatedCategory))
+                .content(objectMapper.writeValueAsString(inputDto))
             );
 
             // then
-            result.andDo(print());
-            verify(categoryService).updateCategory(any(CategoryDto.class), any(CategoryDto.class));
+            verify(categoryService).updateCategory(anyLong(), any(CategoryDto.Req.class));
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(CategoryRestController.class),
@@ -370,30 +272,31 @@ public class CategoryRestControllerTest {
                 jsonPath("$.success", is(true)),
                 jsonPath("$.error", is(nullValue())),
                 jsonPath("$.response", is(notNullValue())),
-                jsonPath("$.response.name", is(updatedCategory.getName())),
-                jsonPath("$.response.parent", is(updatedCategory.getParent()))
+                jsonPath("$.response.name", is(inputDto.getName())),
+                jsonPath("$.response.parent", is(nullValue()))
             ));
         }
 
         @Test
-        @DisplayName("실패: 변경 사항이 없다.")
+        @DisplayName("실패: 존재하지 않는 카테고리를 수정한다.")
         void Fail_NoChanges_ReturnApiResultOfException() throws Exception {
             // given
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto("changed", null);
             ErrorMessage errorMessage = ErrorMessage.NO_CHANGES;
             String message = errorMessage.getMessage();
             int status = errorMessage.getStatus().value();
-            given(categoryService.updateCategory(any(CategoryDto.class), any(CategoryDto.class))).willThrow(
+            given(categoryService.updateCategory(anyLong(), any(CategoryDto.Req.class))).willThrow(
                 new ApiException(errorMessage)
             );
 
             // when
-            ResultActions result = mockMvc.perform(patch(ROOT + "/" + testTopLevelCategory.getName())
+            ResultActions result = mockMvc.perform(patch(ROOT + "/99999")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testTopLevelCategory))
+                .content(objectMapper.writeValueAsString(inputDto))
             );
 
             // then
-            verify(categoryService).updateCategory(any(CategoryDto.class), any(CategoryDto.class));
+            verify(categoryService).updateCategory(anyLong(), any(CategoryDto.Req.class));
             result.andExpect(matchAll(
                 status().isBadRequest(),
                 handler().handlerType(CategoryRestController.class),
@@ -409,19 +312,19 @@ public class CategoryRestControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /api/categories/{name}")
+    @DisplayName("DELETE /api/categories/{id}")
     class Test_Delete_TopLevelCategory {
         @Test
-        @DisplayName("성공: 최상위 카테고리를 삭제한다.")
-        void Success_DeleteTopLevelCategory_ReturnApiResultOfTrue() throws Exception {
+        @DisplayName("성공: 카테고리를 삭제한다.")
+        void Success_DeleteCategory_ReturnApiResultOfTrue() throws Exception {
             // given
-            given(categoryService.deleteCategory(any(CategoryDto.class))).willReturn(true);
+            given(categoryService.deleteCategory(anyLong())).willReturn(true);
 
             // when
-            ResultActions result = mockMvc.perform(delete(ROOT + "/name"));
+            ResultActions result = mockMvc.perform(delete(ROOT + "/1"));
 
             // then
-            verify(categoryService).deleteCategory(any(CategoryDto.class));
+            verify(categoryService).deleteCategory(anyLong());
             result.andExpect(matchAll(
                 status().isOk(),
                 handler().handlerType(CategoryRestController.class),
@@ -435,21 +338,21 @@ public class CategoryRestControllerTest {
         }
 
         @Test
-        @DisplayName("실패: 존재하지 않는 최상위 카테고리를 삭제한다.")
-        void Fail_NonExistentTopLevelCategory_ReturnApiResultOfException() throws Exception {
+        @DisplayName("실패: 존재하지 않는 카테고리를 삭제한다.")
+        void Fail_NonExistentCategory_ReturnApiResultOfException() throws Exception {
             // given
             ErrorMessage errorMessage = ErrorMessage.NON_EXISTENT;
             String message = errorMessage.getMessage("카테고리");
             int status = errorMessage.getStatus().value();
-            given(categoryService.deleteCategory(any(CategoryDto.class))).willThrow(
+            given(categoryService.deleteCategory(anyLong())).willThrow(
                 new ApiException(errorMessage, "카테고리")
             );
 
             // when
-            ResultActions result = mockMvc.perform(delete(ROOT + "/nonExistent"));
+            ResultActions result = mockMvc.perform(delete(ROOT + "/99999"));
 
             // then
-            verify(categoryService).deleteCategory(any(CategoryDto.class));
+            verify(categoryService).deleteCategory(anyLong());
             result.andExpect(matchAll(
                 status().isBadRequest(),
                 handler().handlerType(CategoryRestController.class),
@@ -470,135 +373,15 @@ public class CategoryRestControllerTest {
             ErrorMessage errorMessage = ErrorMessage.NOT_REMOVEABLE_CATEGORY;
             String message = errorMessage.getMessage();
             int status = errorMessage.getStatus().value();
-            given(categoryService.deleteCategory(any(CategoryDto.class))).willThrow(
+            given(categoryService.deleteCategory(anyLong())).willThrow(
                 new ApiException(errorMessage)
             );
 
             // when
-            ResultActions result = mockMvc.perform(delete(ROOT + "/name"));
+            ResultActions result = mockMvc.perform(delete(ROOT + "/1"));
 
             // then
-            verify(categoryService).deleteCategory(any(CategoryDto.class));
-            result.andExpect(matchAll(
-                status().isBadRequest(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("deleteCategory"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(false)),
-                jsonPath("$.response", is(nullValue())),
-                jsonPath("$.error", is(notNullValue())),
-                jsonPath("$.error.message", is(message)),
-                jsonPath("$.error.status", is(status))
-            ));
-        }
-    }
-
-    @Nested
-    @DisplayName("PATCH /api/categories/{parent}/{name}")
-    class Test_Patch_SubCategory {
-        @Test
-        @DisplayName("성공: 하위 카테고리를 수정한다.")
-        void Success_PatchSubCategory_ReturnApiResultOfDto() throws Exception {
-            // given
-            CategoryDto updatedCategory = CategoryDto.builder().name("changed").parent("parent").build();
-            given(categoryService.updateCategory(any(CategoryDto.class), any(CategoryDto.class))).willReturn(updatedCategory);
-
-            // when
-            ResultActions result = mockMvc.perform(patch(ROOT + "/parent/name")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(updatedCategory))
-            );
-
-            // then
-            verify(categoryService).updateCategory(any(CategoryDto.class), any(CategoryDto.class));
-            result.andExpect(matchAll(
-                status().isOk(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("updateCategory"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(true)),
-                jsonPath("$.error", is(nullValue())),
-                jsonPath("$.response", is(notNullValue())),
-                jsonPath("$.response.name", is(updatedCategory.getName())),
-                jsonPath("$.response.parent", is(updatedCategory.getParent()))
-            ));
-        }
-
-        @Test
-        @DisplayName("실패: 변경 사항이 없다.")
-        void Fail_NoChanges_ReturnApiResultOfException() throws Exception {
-            // given
-            ErrorMessage errorMessage = ErrorMessage.NO_CHANGES;
-            String message = errorMessage.getMessage();
-            int status = errorMessage.getStatus().value();
-            given(categoryService.updateCategory(any(CategoryDto.class), any(CategoryDto.class))).willThrow(
-                new ApiException(errorMessage)
-            );
-
-            // when
-            ResultActions result = mockMvc.perform(patch(String.format("%s/%s/%s", ROOT, testSubCategory.getParent(), testSubCategory.getName()))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(testSubCategory))
-            );
-
-            // then
-            verify(categoryService).updateCategory(any(CategoryDto.class), any(CategoryDto.class));
-            result.andExpect(matchAll(
-                status().isBadRequest(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("updateCategory"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(false)),
-                jsonPath("$.response", is(nullValue())),
-                jsonPath("$.error", is(notNullValue())),
-                jsonPath("$.error.message", is(message)),
-                jsonPath("$.error.status", is(status))
-            ));
-        }
-    }
-
-    @Nested
-    @DisplayName("DELETE /api/categories/{parent}/{name}")
-    class Test_Delete_SubCategory {
-        @Test
-        @DisplayName("성공: 하위 카테고리를 삭제한다.")
-        void Success_DeleteSubCategory_ReturnApiResultOfTrue() throws Exception {
-            // given
-            given(categoryService.deleteCategory(any(CategoryDto.class))).willReturn(true);
-
-            // when
-            ResultActions result = mockMvc.perform(delete(ROOT + "/parent/name"));
-
-            // then
-            verify(categoryService).deleteCategory(any(CategoryDto.class));
-            result.andExpect(matchAll(
-                status().isOk(),
-                handler().handlerType(CategoryRestController.class),
-                handler().methodName("deleteCategory"),
-                content().contentType(JSON_CONTENT_TYPE),
-                jsonPath("$.success", is(true)),
-                jsonPath("$.error", is(nullValue())),
-                jsonPath("$.response", is(notNullValue())),
-                jsonPath("$.response", is(true))
-            ));
-        }
-
-        @Test
-        @DisplayName("실패: 존재하지 않는 하위 카테고리를 삭제한다.")
-        void Fail_NonExistentSubCategory_ReturnApiResultOfException() throws Exception {
-            // given
-            ErrorMessage errorMessage = ErrorMessage.NON_EXISTENT;
-            String message = errorMessage.getMessage("카테고리");
-            int status = errorMessage.getStatus().value();
-            given(categoryService.deleteCategory(any(CategoryDto.class))).willThrow(
-                new ApiException(errorMessage, "카테고리")
-            );
-
-            // when
-            ResultActions result = mockMvc.perform(delete(ROOT + "/parent/nonExistent"));
-
-            // then
-            verify(categoryService).deleteCategory(any(CategoryDto.class));
+            verify(categoryService).deleteCategory(anyLong());
             result.andExpect(matchAll(
                 status().isBadRequest(),
                 handler().handlerType(CategoryRestController.class),

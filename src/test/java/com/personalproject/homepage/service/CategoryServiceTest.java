@@ -2,7 +2,10 @@ package com.personalproject.homepage.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -24,9 +27,10 @@ import org.springframework.test.context.ActiveProfiles;
 import com.personalproject.homepage.dto.CategoryDto;
 import com.personalproject.homepage.entity.Category;
 import com.personalproject.homepage.entity.Post;
+import com.personalproject.homepage.error.ApiException;
 import com.personalproject.homepage.error.ErrorMessage;
-import com.personalproject.homepage.helper.MockEntity;
-import com.personalproject.homepage.mapper.CategoryMapper;
+import com.personalproject.homepage.helper.DtoCreator;
+import com.personalproject.homepage.helper.EntityCreator;
 import com.personalproject.homepage.repository.CategoryRepository;
 
 /********************************************************************************
@@ -44,7 +48,6 @@ import com.personalproject.homepage.repository.CategoryRepository;
 public class CategoryServiceTest {
 
     @Mock private CategoryRepository categoryRepository;
-    private CategoryMapper categoryMapper;
     private CategoryService categoryService;
 
     private Category testParentCategoryEntity;
@@ -57,37 +60,33 @@ public class CategoryServiceTest {
             mapper 또한 repository를 의존하므로 실제 객체를 사용한다.
         ********************************************************************************/
         MockitoAnnotations.openMocks(this);
-        categoryMapper = new CategoryMapper(categoryRepository);
-        categoryService = new CategoryService(categoryRepository, categoryMapper);
+        categoryService = new CategoryService(categoryRepository);
 
-        testParentCategoryEntity = MockEntity.mock(Category.class, 99L);
-        testParentCategoryEntity.updateInfo("testParent", null);
-        testChildCategoryEntity = MockEntity.mock(Category.class, 100L);
-        testChildCategoryEntity.updateInfo("testChild", testParentCategoryEntity);
+        testParentCategoryEntity = EntityCreator.category(99l, "testParent", null);
+        testChildCategoryEntity = EntityCreator.category(100l, "testChild", testParentCategoryEntity);
     }
 
     @Nested
     @DisplayName("Create")
     class Test_Create_Category {
         @Test
-        @DisplayName("성공: 최상위 카테고리를 추가하고 dto를 반환한다.")
-        void Success_NewTopLevelCategory_ReturnDto() {
+        @DisplayName("성공: 최상위 카테고리를 추가하고 entity를 반환한다.")
+        void Success_NewTopLevelCategory_ReturnEntity() {
             // given
-            String name = "category";
-            Category createdEntity = MockEntity.mock(Category.class, 1L);
-            createdEntity.updateInfo(name, null);
-            CategoryDto inputDto = CategoryDto.builder().name(name).build();
-            given(categoryRepository.findByNameAndParentCategory(name, null)).willReturn(Optional.empty());
-            given(categoryRepository.save(any(Category.class))).willReturn(createdEntity);
+            Category entity = testParentCategoryEntity;
+            String name = entity.getName();
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(name, null);
+            given(categoryRepository.existsByNameAndParentCategory(name, null)).willReturn(false);
+            given(categoryRepository.save(any(Category.class))).willReturn(entity);
 
             // when
-            CategoryDto returnDto = categoryService.createCategory(inputDto);
+            Category returnEntity = categoryService.createCategory(inputDto);
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(name, null);
+            verify(categoryRepository).existsByNameAndParentCategory(name, null);
             verify(categoryRepository).save(any(Category.class));
-            assertThat(returnDto)
-                .extracting("name", "parent")
+            assertThat(returnEntity)
+                .extracting("name", "parentCategory")
                 .containsExactly(name, null);
         }
 
@@ -96,7 +95,7 @@ public class CategoryServiceTest {
         void Fail_NullNameCategory_ThrowException() {
             // given
             String name = null;
-            CategoryDto inputDto = CategoryDto.builder().name(name).build();
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(name, null);
 
             // when
             Throwable thrown = catchThrowable(() -> categoryService.createCategory(inputDto));
@@ -105,73 +104,73 @@ public class CategoryServiceTest {
             verify(categoryRepository, times(0)).delete(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
-                .hasMessage(ErrorMessage.NOT_ALLOWED_NULL.getMessage("name"));
+                .hasMessage(ErrorMessage.EMPTY_STRING.getMessage("name"));
         }
 
         @Test
         @DisplayName("실패: 중복된 최상위 카테고리 추가 시 예외를 던진다.")
         void Fail_DuplicatedTopLevelCategory_ThrowException() {
-            // given - testParentCategoryEntity
-            Category category = testParentCategoryEntity;
-            String name = category.getName();
-            CategoryDto inputDto = CategoryDto.builder().name(name).build();
-            given(categoryRepository.findByNameAndParentCategory(name, null)).willReturn(Optional.of(category));
+            // given
+            String name = "duplicated";
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(name, null);
+            given(categoryRepository.existsByNameAndParentCategory(name, null)).willReturn(true);
 
             // when
             Throwable thrown = catchThrowable(() -> categoryService.createCategory(inputDto));
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(name, null);
+            verify(categoryRepository).existsByNameAndParentCategory(name, null);
+            verify(categoryRepository, times(0)).save(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
                 .hasMessage(ErrorMessage.ALREADY_EXISTENT.getMessage("카테고리"));
         }
 
         @Test
-        @DisplayName("성공: 하위 카테고리를 추가하고 dto를 반환한다.")
-        void Success_NewSubCategoryOfExistentCategory_ReturnDto() {
-            // given - testParentCategoryEntity
-            Category parentCategory = testParentCategoryEntity;
-            String parentName = parentCategory.getName();
-            String childName = "child";
-            CategoryDto inputDto = CategoryDto.builder().name(childName).parent(parentName).build();
-            Category createdCategory = MockEntity.mock(Category.class, 1L);
-            createdCategory.updateInfo(childName, parentCategory);
+        @DisplayName("성공: 하위 카테고리를 추가하고 entity를 반환한다.")
+        void Success_NewSubCategoryOfExistentCategory_ReturnEntity() {
+            // given
+            Category parentEntity = testParentCategoryEntity;
+            Category entity = testChildCategoryEntity;
+            Long parentId = parentEntity.getIdx();
+            String name = entity.getName();
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(name, parentId);
 
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
-            given(categoryRepository.findByNameAndParentCategory(childName, parentCategory)).willReturn(Optional.empty());
-            given(categoryRepository.save(any(Category.class))).willReturn(createdCategory);
+            given(categoryRepository.findById(parentId)).willReturn(Optional.of(parentEntity));
+            given(categoryRepository.existsByNameAndParentCategory(name, parentEntity)).willReturn(false);
+            given(categoryRepository.save(any(Category.class))).willReturn(entity);
 
             // when
-            CategoryDto returnDto = categoryService.createCategory(inputDto);
+            Category returnEntity = categoryService.createCategory(inputDto);
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            verify(categoryRepository).findByNameAndParentCategory(childName, parentCategory);
+            verify(categoryRepository).findById(parentId);
+            verify(categoryRepository).existsByNameAndParentCategory(name, parentEntity);
             verify(categoryRepository).save(any(Category.class));
-            assertThat(returnDto)
-                .extracting("name", "parent")
-                .containsExactly(childName, parentName);
+            assertThat(returnEntity)
+                .extracting("name", "parentCategory.idx")
+                .containsExactly(name, parentId);
         }
 
         @Test
         @DisplayName("실패: 중복된 하위 카테고리 추가 시 예외를 던진다.")
         void Fail_DuplicatedSubCategoryOfOneCategory_ThrowException() {
-            // given - testParentCategoryEntity, testChildCategoryEntity
-            Category parentCategory = testParentCategoryEntity;
-            Category childCategory = testChildCategoryEntity;
-            String parentName = parentCategory.getName();
-            String childName = childCategory.getName();
-            CategoryDto inputDto = CategoryDto.builder().name(childName).parent(parentName).build();
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
-            given(categoryRepository.findByNameAndParentCategory(childName, parentCategory)).willReturn(Optional.of(childCategory));
+            // given
+            Category parentEntity = testParentCategoryEntity;
+            Category entity = testChildCategoryEntity;
+            Long parentId = parentEntity.getIdx();
+            String name = entity.getName();
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(name, parentId);
+
+            given(categoryRepository.findById(parentId)).willReturn(Optional.of(parentEntity));
+            given(categoryRepository.existsByNameAndParentCategory(name, parentEntity)).willReturn(true);
 
             // when
             Throwable thrown = catchThrowable(() -> categoryService.createCategory(inputDto));
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            verify(categoryRepository).findByNameAndParentCategory(childName, parentCategory);
+            verify(categoryRepository).findById(parentId);
+            verify(categoryRepository).existsByNameAndParentCategory(name, parentEntity);
             verify(categoryRepository, times(0)).save(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
@@ -182,16 +181,16 @@ public class CategoryServiceTest {
         @DisplayName("실패: 존재하지 않는 카테고리에 하위 카테고리 추가 시 예외를 던진다")
         void Fail_SubCategoryOfNonExistentCategory_ThrowException() {
             // given
-            String parentName = "invalid";
-            String childName = "child";
-            CategoryDto inputDto = CategoryDto.builder().name(childName).parent(parentName).build();
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.empty());
+            Long parentId = -1l;
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto("name", parentId);
+
+            given(categoryRepository.findById(parentId)).willReturn(Optional.empty());
 
             // when
             Throwable thrown = catchThrowable(() -> categoryService.createCategory(inputDto));
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
+            verify(categoryRepository).findById(parentId);
             verify(categoryRepository, times(0)).save(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
@@ -204,85 +203,82 @@ public class CategoryServiceTest {
     class Test_Read_Category {
         @Test
         @DisplayName("성공: 모든 카테고리를 List로 반환한다.")
-        void Success_AllCategory_ReturnDtoList() {
+        void Success_AllCategory_ReturnEntityList() {
             // given - testParentCategoryEntity
             int size = 8;
             List<Category> foundList = new ArrayList<>();
             Category parentCategory = testParentCategoryEntity;
             foundList.add(parentCategory);
             for (Long i = 1L; i <= 5L; ++i) {
-                Category category = MockEntity.mock(Category.class, i);
-                category.updateInfo("topLevel" + i, null);
+                Category category = EntityCreator.category(null, "topLevel" + 1, null);
                 foundList.add(category);
             }
             for (Long i = 6L; i <= size; ++i) {
-                Category category = MockEntity.mock(Category.class, i);
-                category.updateInfo("child" + i, parentCategory);
+                Category category = EntityCreator.category(null, "child" + 1, parentCategory);
                 foundList.add(category);
             }
             given(categoryRepository.findAll()).willReturn(foundList);
 
             // when
-            List<CategoryDto> returnDtoList = categoryService.getAllCategories();
+            List<Category> returnEntityList = categoryService.getAllCategories();
 
             // then
             verify(categoryRepository).findAll();
-            assertThat(returnDtoList)
+            assertThat(returnEntityList)
                 .size()
                 .isEqualTo(size + 1);
-            assertThat(returnDtoList)
-                .filteredOn(c -> c.getParent() == null)
+            assertThat(returnEntityList)
+                .filteredOn(c -> c.getParentCategory() == null)
                 .size()
                 .isEqualTo(6);
         }
 
         @Test
-        @DisplayName("성공: 모든 최상위 카테고리를 dto List로 반환한다.")
-        void Success_AllTopLevelCategory_ReturnDtoList() {
+        @DisplayName("성공: 카테고리별 포스트 개수와 함깨 entity list로 반환한다.")
+        void Success_AllCategoriesWithPostsCount_ReturnEntityList() {
             // given
-            int size = 5;
-            List<Category> foundTopLevelList = new ArrayList<>();
-            for (Long i = 1L; i <= size; ++i) {
-                Category category = MockEntity.mock(Category.class, i);
-                category.updateInfo("parent" + i, null);
-                foundTopLevelList.add(category);
-            }
-            given(categoryRepository.findAllByParentCategoryIsNull()).willReturn(foundTopLevelList);
+            Boolean visible = null;
+            given(categoryRepository.allCategoriesWithPostsCount(eq(visible))).willReturn(List.of(
+                new Category.WithPostsCount(testParentCategoryEntity, 3l),
+                new Category.WithPostsCount(testChildCategoryEntity, 5l)
+            ));
 
             // when
-            List<CategoryDto> returnDtoList = categoryService.getAllTopLevelCategories();
+            List<Category.WithPostsCount> postsCountList = categoryService.getAllCategoriesWithPostsCount(visible);
 
             // then
-            verify(categoryRepository).findAllByParentCategoryIsNull();
-            assertThat(returnDtoList)
-                .allMatch(c -> c.getParent() == null)
-                .size()
-                .isEqualTo(size);
+            verify(categoryRepository).allCategoriesWithPostsCount(eq(visible));
+            assertThat(postsCountList).size().isEqualTo(2);
+            assertThat(postsCountList)
+                .extracting("category", "postsCount")
+                .containsExactly(
+                    tuple(testParentCategoryEntity, 3l),
+                    tuple(testChildCategoryEntity, 5l)
+                );
         }
 
         @Test
-        @DisplayName("성공: 카테고리에 속한 모든 하위 카테고리를 dto List로 반환한다.")
-        void Success_AllSubCategoryOfOneCategory_ReturnDtoList() {
-            // given - total 6 categories including testChildCategoryEntity inside testParentCategoryEntity
-            Category parentCategory = testParentCategoryEntity;
-            String parentName = parentCategory.getName();
-            int size = 5;
-            for (Long i = 1L; i <= size; ++i) {
-                Category category = MockEntity.mock(Category.class, i + 1);
-                category.updateInfo("child" + i, parentCategory);
-            }
-            CategoryDto inputDto = CategoryDto.builder().name(parentName).build();
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
+        @DisplayName("성공: 카테고리별 visible 포스트 개수와 함께 entity list로 반환한다.")
+        void Success_AllCategoriesWithVisiblePostsCount_ReturnEntityList() {
+            // given
+            Boolean visible = true;
+            given(categoryRepository.allCategoriesWithPostsCount(eq(visible))).willReturn(List.of(
+                new Category.WithPostsCount(testParentCategoryEntity, 3l),
+                new Category.WithPostsCount(testChildCategoryEntity, 5l)
+            ));
 
             // when
-            List<CategoryDto> returnDtoList = categoryService.getAllSubCategoriesOf(inputDto);
+            List<Category.WithPostsCount> postsCountList = categoryService.getAllCategoriesWithPostsCount(visible);
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            assertThat(returnDtoList)
-                .allMatch(c -> c.getParent().equals(parentName))
-                .size()
-                .isEqualTo(size + 1);
+            verify(categoryRepository).allCategoriesWithPostsCount(eq(visible));
+            assertThat(postsCountList).size().isEqualTo(2);
+            assertThat(postsCountList)
+                .extracting("category", "postsCount")
+                .containsExactly(
+                    tuple(testParentCategoryEntity, 3l),
+                    tuple(testChildCategoryEntity, 5l)
+                );
         }
     }
 
@@ -290,133 +286,96 @@ public class CategoryServiceTest {
     @DisplayName("Update")
     class Test_Update_Category {
         @Test
-        @DisplayName("카테고리 이름을 변경하고 dto를 반환한다.")
-        void Success_CategoryName_ReturnDto() {
-            //given - testParentCategoryEntity
+        @DisplayName("카테고리 이름을 변경하고 entity를 반환한다.")
+        void Success_CategoryName_ReturnEntity() {
+            // given
             Category category = testParentCategoryEntity;
-            String before = category.getName();
+            Long categoryId = category.getIdx();
             String after = "after";
 
-            CategoryDto beforeDto = CategoryDto.builder().name(before).build();
-            CategoryDto afterDto = CategoryDto.builder().name(after).build();
-            given(categoryRepository.findByNameAndParentCategory(before, null)).willReturn(Optional.of(category));
-            given(categoryRepository.findByNameAndParentCategory(after, null)).willReturn(Optional.empty());
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(after, null);
+
+            given(categoryRepository.findById(categoryId)).willReturn(Optional.of(category));
+            given(categoryRepository.existsByNameAndParentCategory(after, null)).willReturn(false);
 
             // when
-            CategoryDto updatedDto = categoryService.updateCategory(beforeDto, afterDto);
+            Category updatedEntity = categoryService.updateCategory(categoryId, inputDto);
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(before, null);
-            verify(categoryRepository).findByNameAndParentCategory(after, null);
-            assertThat(updatedDto)
+            verify(categoryRepository).findById(categoryId);
+            verify(categoryRepository).existsByNameAndParentCategory(after, null);
+            assertThat(updatedEntity)
                 .extracting("name")
                 .isEqualTo(after);
         }
 
         @Test
-        @DisplayName("성공: 부모 카테고리를 변경하고 dto를 반환한다.")
-        void Success_ParentCategory_ReturnDto() {
-            // given - testParentCategoryEntity, testChildCategoryEntity
-            Category parentBeforeCategory = testParentCategoryEntity;
-            String parentBefore = parentBeforeCategory.getName();
-            String parentAfter = "parentAfter";
-            Category parentAfterCategory = MockEntity.mock(Category.class, 2L);
-            parentAfterCategory.updateInfo(parentAfter, null);
-            Category childCategory = testChildCategoryEntity;
-            String child = childCategory.getName();
+        @DisplayName("성공: 부모 카테고리를 변경하고 entity를 반환한다.")
+        void Success_ParentCategory_ReturnEntity() {
+            // given
+            Category entity = testChildCategoryEntity;
+            Long categoryId = entity.getIdx();
+            String name = entity.getName();
 
-            CategoryDto inputBeforeDto = CategoryDto.builder().name(child).parent(parentBefore).build();
-            CategoryDto inputAfterDto = CategoryDto.builder().name(child).parent(parentAfter).build();
-            given(categoryRepository.findByNameAndParentCategory(parentBefore, null)).willReturn(Optional.of(parentBeforeCategory));
-            given(categoryRepository.findByNameAndParentCategory(child, parentBeforeCategory)).willReturn(Optional.of(childCategory));
-            given(categoryRepository.findByNameAndParentCategory(parentAfter, null)).willReturn(Optional.of(parentAfterCategory));
-            given(categoryRepository.findByNameAndParentCategory(child, parentAfterCategory)).willReturn(Optional.empty());
+            Category parentAfterCategory = testParentCategoryEntity;
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(null, parentAfterCategory.getIdx());
+
+            given(categoryRepository.findById(categoryId)).willReturn(Optional.of(entity));
+            given(categoryRepository.findById(inputDto.getParentId())).willReturn(Optional.of(parentAfterCategory));
+            given(categoryRepository.existsByNameAndParentCategory(name, parentAfterCategory)).willReturn(false);
 
             // when
-            CategoryDto updatedDto = categoryService.updateCategory(inputBeforeDto, inputAfterDto);
+            Category updatedEntity = categoryService.updateCategory(categoryId, inputDto);
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentBefore, null);
-            verify(categoryRepository).findByNameAndParentCategory(child, parentBeforeCategory);
-            verify(categoryRepository).findByNameAndParentCategory(parentAfter, null);
-            verify(categoryRepository).findByNameAndParentCategory(child, parentAfterCategory);
-            assertThat(updatedDto)
-                .extracting("name", "parent")
-                .containsExactly(child, parentAfter);
+            verify(categoryRepository).findById(categoryId);
+            verify(categoryRepository).findById(inputDto.getParentId());
+            verify(categoryRepository).existsByNameAndParentCategory(name, parentAfterCategory);
+            assertThat(updatedEntity)
+                .extracting("name", "parentCategory.idx")
+                .containsExactly(name, parentAfterCategory.getIdx());
         }
 
         @Test
         @DisplayName("성공: 부모 카테고리를 null로 변경하여 top-level로 만든다.")
-        void Success_NullParentCategory_ReturnDto() {
-            // given - testChildCategoryEntity
-            Category childCategory = testChildCategoryEntity;
-            String childName = childCategory.getName();
-            Category parentCategory = childCategory.getParentCategory();
-            String parentName = parentCategory.getName();
-            CategoryDto inputBeforeDto = CategoryDto.builder().name(childName).parent(parentName).build();
-            CategoryDto inputAfterDto = CategoryDto.builder().parent(null).build();
+        void Success_NullParentCategory_ReturnEntity() {
+            // given
+            Category entity = testChildCategoryEntity;
+            Long categoryId = entity.getIdx();
+            String name = entity.getName();
+            CategoryDto.Req inputAfterDto = DtoCreator.categoryReqDto(null, null);
 
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
-            given(categoryRepository.findByNameAndParentCategory(childName, parentCategory)).willReturn(Optional.of(childCategory));
+            given(categoryRepository.findById(categoryId)).willReturn(Optional.of(entity));
+            given(categoryRepository.existsByNameAndParentCategory(name, null)).willReturn(false);
 
             // when
-            CategoryDto updatedDto = categoryService.updateCategory(inputBeforeDto, inputAfterDto);
+            Category updatedEntity = categoryService.updateCategory(categoryId, inputAfterDto);
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            verify(categoryRepository).findByNameAndParentCategory(childName, parentCategory);
-            assertThat(updatedDto)
-                .extracting("name", "parent")
-                .containsExactly(childName, null);
-        }
-
-        @Test
-        @DisplayName("실패: 포스트가 있는 카테고리의 부모 카테고리를 null로 변경 시 예외를 던진다.")
-        void Fail_NullParentCategoryHavingPosts_ThrowException() {
-            // given - testChildCategoryEntity
-            Category childCategory = testChildCategoryEntity;
-            String childName = childCategory.getName();
-            Category parentCategory = childCategory.getParentCategory();
-            String parentName = parentCategory.getName();
-            CategoryDto inputBeforeDto = CategoryDto.builder().name(childName).parent(parentName).build();
-            CategoryDto inputAfterDto = CategoryDto.builder().parent(null).build();
-
-            childCategory.getPostsOfCategory().add(MockEntity.mock(Post.class));
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
-            given(categoryRepository.findByNameAndParentCategory(childName, parentCategory)).willReturn(Optional.of(childCategory));
-
-            // when
-            Throwable thrown = catchThrowable(() -> categoryService.updateCategory(inputBeforeDto, inputAfterDto));
-
-            // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            verify(categoryRepository).findByNameAndParentCategory(childName, parentCategory);
-            assertThat(thrown)
-                .isInstanceOf(Exception.class)
-                .hasMessage(ErrorMessage.NOT_CHANGE_TO_TOPLEVEL_CATEGORY.getMessage());
+            verify(categoryRepository).findById(categoryId);
+            verify(categoryRepository).existsByNameAndParentCategory(name, null);
+            assertThat(updatedEntity)
+                .extracting("name", "parentCategory")
+                .containsExactly(name, null);
         }
 
         @Test
         @DisplayName("실패: 중복되는 카테고리로 변경 시 예외를 던진다.")
         void Fail_DuplicatedCategory_ThrowException() {
             // given - testParentCategoryEntity
-            String name = "category";
-            Category category = MockEntity.mock(Category.class, 1L);
-            category.updateInfo(name, null);
-            Category existentCategory = testParentCategoryEntity;
-            String duplicatedName = existentCategory.getName();
+            Category entity = testParentCategoryEntity;
+            String name = "duplicatedName";
 
-            CategoryDto inputBeforeDto = CategoryDto.builder().name(name).build();
-            CategoryDto inputAfterDto = CategoryDto.builder().name(duplicatedName).build();
-            given(categoryRepository.findByNameAndParentCategory(name, null)).willReturn(Optional.of(category));
-            given(categoryRepository.findByNameAndParentCategory(duplicatedName, null)).willReturn(Optional.of(existentCategory));
+            CategoryDto.Req dto = DtoCreator.categoryReqDto(name, null);
+            given(categoryRepository.findById(anyLong())).willReturn(Optional.of(entity));
+            given(categoryRepository.existsByNameAndParentCategory(name, null)).willReturn(true);
 
             // when
-            Throwable thrown = catchThrowable(() -> categoryService.updateCategory(inputBeforeDto, inputAfterDto));
+            Throwable thrown = catchThrowable(() -> categoryService.updateCategory(anyLong(), dto));
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(name, null);
-            verify(categoryRepository).findByNameAndParentCategory(duplicatedName, null);
+            verify(categoryRepository).findById(anyLong());
+            verify(categoryRepository).existsByNameAndParentCategory(name, null);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
                 .hasMessage(ErrorMessage.ALREADY_EXISTENT.getMessage("카테고리"));
@@ -426,26 +385,23 @@ public class CategoryServiceTest {
         @DisplayName("실패: 존재 하지 않는 부모 카테고리로 변경 시 예외를 던진다.")
         void Fail_NonExistentParentCategory_ThrowException() {
             // given - testParentCategoryEntity, testChildCategoryEntity
-            Category parentCategory = testParentCategoryEntity;
-            String parentName = parentCategory.getName();
-            Category childCategory = testChildCategoryEntity;
-            String childName = childCategory.getName();
-            String invalidParent = "invalid";
+            Category entity = testChildCategoryEntity;
+            Long invalidId = -1l;
 
-            CategoryDto inputBeforeDto = CategoryDto.builder().name(childName).parent(parentName).build();
-            CategoryDto inputAfterDto = CategoryDto.builder().name(childName).parent(invalidParent).build();
+            Long categoryId = entity.getIdx();
+            CategoryDto.Req inputDto = DtoCreator.categoryReqDto(entity.getName(), invalidId);
 
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
-            given(categoryRepository.findByNameAndParentCategory(childName, parentCategory)).willReturn(Optional.of(childCategory));
-            given(categoryRepository.findByNameAndParentCategory(invalidParent, null)).willReturn(Optional.empty());
+            given(categoryRepository.findById(eq(categoryId))).willReturn(Optional.of(entity));
+            given(categoryRepository.findById(eq(invalidId))).willThrow(
+                new ApiException(ErrorMessage.NON_EXISTENT, "상위 카테고리")
+            );
 
             // when
-            Throwable thrown = catchThrowable(() -> categoryService.updateCategory(inputBeforeDto, inputAfterDto));
+            Throwable thrown = catchThrowable(() -> categoryService.updateCategory(categoryId, inputDto));
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            verify(categoryRepository).findByNameAndParentCategory(childName, parentCategory);
-            verify(categoryRepository).findByNameAndParentCategory(invalidParent, null);
+            verify(categoryRepository).findById(eq(categoryId));
+            verify(categoryRepository).findById(eq(invalidId));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
                 .hasMessage(ErrorMessage.NON_EXISTENT.getMessage("상위 카테고리"));
@@ -459,21 +415,14 @@ public class CategoryServiceTest {
         @DisplayName("성공: 카테고리 하나를 삭제하고 true를 반환한다.")
         void Success_OneCategory_ReturnTrue() {
             // given - testParentCategoryEntity, testChildCategoryEntity
-            Category parentCategory = testParentCategoryEntity;
-            String parentName = parentCategory.getName();
-            Category childCategory = testChildCategoryEntity;
-            String childName = parentCategory.getName();
-            CategoryDto inputDto = CategoryDto.builder().name(parentName).parent(childName).build();
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
-            given(categoryRepository.findByNameAndParentCategory(childName, parentCategory)).willReturn(Optional.of(childCategory));
+            given(categoryRepository.findById(anyLong())).willReturn(Optional.of(testChildCategoryEntity));
 
             // when
-            boolean isDeleted = categoryService.deleteCategory(inputDto);
+            boolean isDeleted = categoryService.deleteCategory(anyLong());
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            verify(categoryRepository).findByNameAndParentCategory(childName, parentCategory);
-            verify(categoryRepository).delete(childCategory);
+            verify(categoryRepository).findById(anyLong());
+            verify(categoryRepository).delete(testChildCategoryEntity);
             assertThat(isDeleted)
                 .isTrue();
         }
@@ -482,15 +431,15 @@ public class CategoryServiceTest {
         @DisplayName("실패: 존재하지 않는 카테고리 삭제 시 예외를 던진다.")
         void Fail_NonExistentCategory_ThrowException() {
             // given
-            String name = "invalid";
-            CategoryDto inputDto = CategoryDto.builder().name(name).build();
-            given(categoryRepository.findByNameAndParentCategory(name, null)).willReturn(Optional.empty());
+            given(categoryRepository.findById(anyLong())).willThrow(
+                new ApiException(ErrorMessage.NON_EXISTENT, "카테고리")
+            );
 
             // when
-            Throwable thrown = catchThrowable(() -> categoryService.deleteCategory(inputDto));
+            Throwable thrown = catchThrowable(() -> categoryService.deleteCategory(anyLong()));
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(name, null);
+            verify(categoryRepository).findById(anyLong());
             verify(categoryRepository, times(0)).delete(any(Category.class));
             assertThat(thrown)
                 .isInstanceOf(Exception.class)
@@ -498,40 +447,19 @@ public class CategoryServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 다른 카테고리의 부모 카테고리인 것을 삭제하고 true를 반환한다.")
-        void Success_ParentCategoryOfOtherCategory_ReturnTrue() {
-            // given - testParentCategoryEntity, testChildCategoryEntity
-            Category parentCategory = testParentCategoryEntity;
-            String parentName = parentCategory.getName();
-            CategoryDto inputCategory = CategoryDto.builder().name(parentName).build();
-            given(categoryRepository.findByNameAndParentCategory(parentName, null)).willReturn(Optional.of(parentCategory));
-
-            // when
-            boolean isDeleted = categoryService.deleteCategory(inputCategory);
-
-            // then
-            verify(categoryRepository).findByNameAndParentCategory(parentName, null);
-            verify(categoryRepository).delete(parentCategory);
-            assertThat(isDeleted)
-                .isTrue();
-        }
-
-        @Test
         @DisplayName("실패: 포스트의 카테고리로 참조되는 카테고리 제거 시 예외를 던진다.")
         void Fail_CategoryOfPosts_ThrowException() {
             // given - testParentCategoryEntity
             Category category = testParentCategoryEntity;
-            String name = category.getName();
-            Post post = MockEntity.mock(Post.class, 1L);
-            post.updateInfo(category, "title", "content", "desc", true);
-            CategoryDto inputDto = CategoryDto.builder().name(name).build();
-            given(categoryRepository.findByNameAndParentCategory(name, null)).willReturn(Optional.of(category));
+            Post post = EntityCreator.post(null, category, "title", "content", "desc", true);
+            post.updateInfo(category, null, null, null, null);
+            given(categoryRepository.findById(anyLong())).willReturn(Optional.of(category));
 
             // when
-            Throwable thrown = catchThrowable(() -> categoryService.deleteCategory(inputDto));
+            Throwable thrown = catchThrowable(() -> categoryService.deleteCategory(anyLong()));
 
             // then
-            verify(categoryRepository).findByNameAndParentCategory(name, null);
+            verify(categoryRepository).findById(anyLong());
             verify(categoryRepository, times(0)).delete(category);
             assertThat(thrown)
                 .isInstanceOf(Exception.class)

@@ -4,23 +4,23 @@
     <nav id="category">
       <ul>
         <li th:class="${selectedCategory eq null} ? 'selected'">
-          <a th:text="|전체 카테고리 (${visiblePostsCount eq null ? 0 : visiblePostsCount})|" th:href="@{/category}"></a>
+          <a th:text="|전체 카테고리 (${totalPostsCount eq null ? 0 : totalPostsCount})|" th:href="@{/category}"></a>
         </li>
         <li th:with="
               sName=${selectedCategory ne null} ? ${selectedCategory.name},
               sParent=${selectedCategory ne null} ? ${selectedCategory.parent},
               parent=${postsCount.name}"
             th:each="postsCount : ${postsCountList}"
-            th:if="${postsCount.visibleCount} ne 0"
+            th:if="${postsCount.postsCount} ne 0"
             th:class="${parent eq sName} and ${sParent eq null} ? 'selected'">
-          <a th:text="|${parent} (${postsCount.visibleCount})|"
+          <a th:text="|${parent} (${postsCount.postsCount})|"
               th:href="@{|/category/${parent}|}"></a>
           <ul>
             <li th:with="name=${childPostsCount.name}"
                 th:each="childPostsCount : ${postsCount.childList}"
-                th:if="${childPostsCount.visibleCount} ne 0"
+                th:if="${childPostsCount.postsCount} ne 0"
                 th:class="${name eq sName} and ${parent eq sParent} ? 'selected'">
-              <a th:text="|${name} (${childPostsCount.visibleCount})|"
+              <a th:text="|${name} (${childPostsCount.postsCount})|"
                 th:href="@{|/category/${parent}/${name}|}"></a>
             </li>
           </ul>

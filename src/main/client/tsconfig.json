@@ -1,0 +1,58 @@
+// https://www.typescriptlang.org/tsconfig
+{
+  "compilerOptions": {
+    // Type Checking
+    "allowUnreachableCode": false,
+    "exactOptionalPropertyTypes": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": true,
+    "strict": true, // 아래 옵션이 모두 true가 된다. 필요시 해제할 수 있다.
+    // "alwaysStrict": false,
+    // "strictNullChecks": false,
+    // "strictBindCallApply": false,
+    // "strictFunctionTypes": false,
+    // "strictPropertyInitialization": false,
+    // "noImplicitAny": false,
+    // "noImplicitThis": false,
+    // "useUnknownInCatchVariables": false,
+
+    // Modules
+    "baseUrl": "./",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+
+    // JavaScript Support
+    "allowJs": true,
+    "checkJs": true,
+
+    // Interop Constraints
+    "esModuleInterop": true,
+    // "allowSyntheticDefaultImports": true, // true if esModuleInterop
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Backwards Compatibility
+    "suppressExcessPropertyErrors": true,
+    "suppressImplicitAnyIndexErrors": true,
+
+    // Language and Environment
+    "jsx": "react-jsx",
+
+    "target": "es5",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+
+    // Completeness
+    "skipLibCheck": true,
+  },
+  "include": [
+    "src"
+  ]
+}

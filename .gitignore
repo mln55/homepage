@@ -38,3 +38,6 @@ out/
 
 # 배포용 yml
 src/**/application-prod.yml
+
+### client ###
+**/src/main/client/node_modules

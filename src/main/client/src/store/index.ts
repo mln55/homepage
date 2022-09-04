@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { setupListeners } from "@reduxjs/toolkit/dist/query";
 import CategoryTreeSlice from '../slices/CategoryTreeSlice';
+import PostSlice from '../slices/PostSlice';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -15,6 +16,7 @@ const store = configureStore({
   // 각 slice의 reducer 들이 들어간다.
   reducer: {
     categoryTree: CategoryTreeSlice.reducer,
+    post: PostSlice.reducer,
   }
 });
 

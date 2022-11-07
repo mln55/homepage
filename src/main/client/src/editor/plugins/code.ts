@@ -13,12 +13,14 @@ export default {
       context._code = {
           codeContentElement: null,
           codeLanguageSelect: null,
+          focusElement: null,
       };
 
       let codeDialog = this.setDialog(core);
       context._code.modal = codeDialog;
       context._code.codeContentElement = codeDialog.querySelector('._se_code_content');
       context._code.codeLanguageSelect = codeDialog.querySelector('._se_code_language');
+      context._code.focusElement = context._code.codeContentElement;
 
       codeDialog.querySelector('form').addEventListener('submit', this.submit.bind(core));
       context.dialog.modal.appendChild(codeDialog);

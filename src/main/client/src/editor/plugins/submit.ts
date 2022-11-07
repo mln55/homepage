@@ -88,7 +88,9 @@ export default {
     for (let i = 0; i < code.length; ++i) {
       code[i].removeAttribute('class');
       code[i].removeAttribute('id');
-      code[i].innerHTML = code[i].innerText;
+      for (let child of code[i]?.children) {
+        child.removeAttribute('class');
+      }
     }
 
     /********************************************************************************

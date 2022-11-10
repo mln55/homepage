@@ -129,18 +129,14 @@ function ManagePost() {
     setIsOpen(!isOpen);
   }
 
-  const style = {
-    'display': 'flex'
-  }
-
   return (
     <div className="post-container">
-      <div style={style}>
+      <div className="post-list-button">
         <div className="check">
           <input id="postcheckall" type="checkbox" checked={allChecked} onChange={handleToggleCheckAll}/>
-          <label htmlFor="postcheckall">
+          {/* <label htmlFor="postcheckall">
             {allChecked ? <MdCheckBox /> : <MdCheckBoxOutlineBlank />}
-          </label>
+          </label> */}
         </div>
         <PostChangeOption
           isActivate={anyChecked}
@@ -155,8 +151,10 @@ function ManagePost() {
           paramCategoryId={paramCategoryId}
           paramVisible={paramVisible}
         />
+        <div className="new">
+          <button onClick={() => window.location.href="/admin/manage/newpost"}>글 등록</button>
+        </div>
       </div>
-      <div>
       {
         postList.length < 1
         ? <div>
@@ -169,7 +167,6 @@ function ManagePost() {
           }
         </ul>
       }
-      </div>
       <PostPagination
         page={paramPage ? Number(paramPage) : 1}
         paramCategoryId={paramCategoryId}

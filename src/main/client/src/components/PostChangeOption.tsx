@@ -48,6 +48,8 @@ const PostChangeOption = (props: {
           }
         })
     });
+
+    window.location.reload();
   }
 
   const handleChangeVisible = (visible: boolean) => {
@@ -58,38 +60,44 @@ const PostChangeOption = (props: {
     handleChangePostInfo({categoryId: categoryId, category: category});
   };
 
+  const handleDummyAClick = (e: MouseEvent) => {
+    e.preventDefault();
+  }
+
   return (
     <div className="change" ref={ref}>
-    <button type="button" disabled={!isActivate} onClick={onToggleOpen}>변경</button>
-    <div className="option">
-      <span>공개 여부</span>
-      <ul>
-        <li onClick={() => handleChangeVisible(true)}><span>공개</span></li>
-        <li onClick={() => handleChangeVisible(false)}><span>비공개</span></li>
-      </ul>
-      <span>카테고리</span>
-      <ul>
-        {
-          categoryTree.map(p =>
-            <React.Fragment key={p.categoryId}>
-            <li onClick={() => handleChangeCategory(p.categoryId, {name: p.name, parent: null})}><span>{p.name}</span></li>
-            {
-              !p.childList
-                ? null
-                : <ul>
-                  {
-                    p.childList.map(c =>
-                      <li key={c.categoryId} onClick={() => handleChangeCategory(c.categoryId, {name: c.name, parent: p.name})}><span>{c.name}</span></li>
-                    )
-                  }
-                </ul>
-            }
-            </React.Fragment>
-          )
-        }
-      </ul>
+      <button type="button" disabled={!isActivate} onClick={onToggleOpen}>변경</button>
+      <div className="option">
+        <span>공개 여부</span>
+        <ul>
+          <li onClick={() => handleChangeVisible(true)}><a href="" onClick={() => handleDummyAClick}>공개</a></li>
+          <li onClick={() => handleChangeVisible(false)}><a href="" onClick={() => handleDummyAClick}>비공개</a></li>
+        </ul>
+        <span>카테고리</span>
+        <ul>
+          {
+            categoryTree.map(p =>
+              <React.Fragment key={p.categoryId}>
+              <li onClick={() => handleChangeCategory(p.categoryId, {name: p.name, parent: null})}>
+                <a href="" onClick={() => handleDummyAClick}>{p.name}</a>
+                {p.childList.length < 1
+                  ? null
+                  : <ul>
+                    {
+                      p.childList.map(c =>
+                        <li key={c.categoryId} onClick={() => handleChangeCategory(c.categoryId, {name: c.name, parent: p.name})}>
+                          <a href="" onClick={() => handleDummyAClick}>{c.name}</a>
+                        </li>
+                      )
+                    }
+                  </ul>}
+              </li>
+              </React.Fragment>
+            )
+          }
+        </ul>
+      </div>
     </div>
-  </div>
   )
 }
 

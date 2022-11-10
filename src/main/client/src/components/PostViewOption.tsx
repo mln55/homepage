@@ -38,21 +38,19 @@ const PostViewOption = (props: {
             categoryTree.map(p =>
               <React.Fragment key={p.categoryId}>
               <li>
-                <Link className={categoryId === '' + p.categoryId ? 'on' : ''} onClick={onToggleOpen} to={`?categoryid=${p.categoryId}${visible ? `&visible=${visible}` : ''}`}>{p.name}</Link>
-              </li>
-              {
-                !p.childList
+                <Link className={categoryId === '' + p.categoryId ? 'on' : ''} onClick={onToggleOpen} to={`?categoryid=${p.categoryId}${visible ? `&visible=${visible}` : ''}`}>{p.name} ({p.postsCount})</Link>
+                {p.childList.length < 1
                   ? null
                   : <ul>
                     {
                       p.childList.map(c =>
                         <li key={c.categoryId}>
-                          <Link className={categoryId === '' + c.categoryId ? 'on' : ''} onClick={onToggleOpen} to={`?categoryid=${c.categoryId}${visible ? `&visible=${visible}` : ''}`}>{c.name}</Link>
+                          <Link className={categoryId === '' + c.categoryId ? 'on' : ''} onClick={onToggleOpen} to={`?categoryid=${c.categoryId}${visible ? `&visible=${visible}` : ''}`}>{c.name} ({c.postsCount})</Link>
                         </li>
                       )
                     }
-                  </ul>
-              }
+                  </ul>}
+              </li>
               </React.Fragment>
             )
           }

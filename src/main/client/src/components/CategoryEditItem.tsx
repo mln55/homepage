@@ -28,9 +28,9 @@ function CategoryEditItem (props: CategoryItemProps) {
   return (
     <li className="category-edit" onMouseOver={e => e.stopPropagation()} onMouseOut={e => e.stopPropagation()}>
       <div>
-        <form onSubmit={handleSubmit} onReset={handleReset}>
+        <form className="category-content" onSubmit={handleSubmit} onReset={handleReset}>
           <input className="category-name" autoFocus={true} type="text" value={name} onChange={(e) => {setName(e.target.value)}}/>
-          <div>
+          <div className="category-item-button">
             <button type="reset">취소</button>
             <button disabled={name.trim().length ? false : true} type="submit">확인</button>
           </div>

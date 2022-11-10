@@ -46,27 +46,27 @@ function Post(props: {
       <div>
         <input id={`postcheck${post.id}`} checked={checked} type="checkbox" onChange={handleCheckPost}/>
         <label htmlFor={`postcheck${post.id}`}>
-        {
+        {/* {
           checked ? <MdCheckBox /> : <MdCheckBoxOutlineBlank />
-        }
+        } */}
         </label>
       </div>
       <div className="post">
-        <div><Link target="_blank" to={`/${post.id}`}>{post.title}</Link></div>
-        <div><FaRegCalendar /> {post.postAt.slice(0, 19).replaceAll('-', '.').replace('T', ' ')}</div>
-        <div>
+        <div className="title"><Link target="_blank" title={post.title} to={`/${post.id}`}>{post.title}</Link></div>
+        <div className="date"><FaRegCalendar /> {post.postAt.slice(0, 10).replaceAll('-', '.')}</div>
+        <div className="category">
           <FaRegBookmark />
           {
             post.category.parent
-            ? <Link target="_blank" to={`/category/${post.category.parent}/${post.category.name}`}>
+            ? <Link target="_blank" title={`${post.category.parent}/${post.category.name}`} to={`/category/${post.category.parent}/${post.category.name}`}>
               {post.category.parent}/{post.category.name}
             </Link>
-            : <Link target="_blank" to={`/category/${post.category.name}`}>
+            : <Link target="_blank" title={post.category.name} to={`/category/${post.category.name}`}>
               {post.category.name}
             </Link>
           }
         </div>
-        <div>
+        <div className="visible">
           {
             post.visible
             ? <><FaRegEye /> '공개'</>

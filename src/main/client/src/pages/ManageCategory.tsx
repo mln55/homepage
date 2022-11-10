@@ -95,7 +95,7 @@ function ManageCategory() {
         }
       </ul>
       <div className="category-list-button">
-        <button onClick={() => handleAddClick(null)} type="button">카테고리 추가</button>
+        <button className="category-add-btn" onClick={() => handleAddClick(null)} type="button">카테고리 추가</button>
         <button disabled={!updatable} onClick={handleSaveClick}  type="button">저장</button>
       </div>
     </div>

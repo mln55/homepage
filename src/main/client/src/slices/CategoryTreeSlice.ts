@@ -303,6 +303,7 @@ const CategoryTreeSlice = createSlice({
       });
 
       alert('변경 사항이 저장 되었습니다.');
+      window.location.reload();
     }
   },
 });

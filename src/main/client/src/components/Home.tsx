@@ -1,4 +1,10 @@
+import { useEffect } from "react";
+
 function Home() {
+
+  useEffect(() => {
+    document.title = '관리 홈';
+  }, []);
 
   return (
     <div>

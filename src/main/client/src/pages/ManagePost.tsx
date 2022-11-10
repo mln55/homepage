@@ -115,6 +115,10 @@ function ManagePost() {
     };
   }, []);
 
+  useEffect(() => {
+    document.title = '게시글 관리';
+  }, []);
+
   const handleToggleCheckAll = () => {
     if (allChecked) dispatch(PostSliceActions.uncheckAll());
     else dispatch(PostSliceActions.checkAll());

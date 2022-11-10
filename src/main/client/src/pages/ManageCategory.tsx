@@ -24,6 +24,10 @@ function ManageCategory() {
     })();
   }, []);
 
+  useEffect(() => {
+    document.title = '카테고리 관리';
+  }, []);
+
   // parent 하위로 카테고리를 추가한다.
   const handleAddClick = (parent: number | null) => {
     dispatch(categoryTreeActions.add({

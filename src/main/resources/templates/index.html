@@ -42,6 +42,7 @@
         <!--/* header */-->
         <header id="header">
           <div class="logo">
+            <a th:if="${isAdmin}" th:href="@{/admin/manage}">관리자페이지</a>
             <a th:href="@{/}">Home</a>
           </div>
         </header>

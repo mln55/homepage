@@ -178,4 +178,15 @@ public class PageViewController {
         mv.addObject("pageType", PageType.POST_LIST);
         return mv;
     }
+
+    @GetMapping({"admin/manage", "admin/manage/*"})
+    public ModelAndView adminManage(HttpServletRequest request) {
+        if (!request.isUserInRole("ADMIN")) {
+            log.info("admin페이지 요청");
+            throw new PageNotFoundException();
+        }
+
+        ModelAndView mv = new ModelAndView(ViewName.ADMIN);
+        return mv;
+    }
 }

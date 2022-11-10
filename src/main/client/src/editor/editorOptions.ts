@@ -21,7 +21,9 @@ export default {
   width: '100%',
   minHeight: '700px',
   className: 'post-editor-area',
+  defaultStyle: 'font-family: Noto Sans KR',
   font: [ // font(글꼴) 버튼
+    'Noto Sans KR',
     'Arial',
     'D2Coding',
     'tohoma',

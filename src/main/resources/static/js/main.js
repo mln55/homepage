@@ -149,5 +149,8 @@
   });
 
   // hljs
-  if (document.querySelectorAll('pre code').length !== 0) hljs.highlightAll();
+  if (document.querySelectorAll('pre code').length !== 0) {
+    hljs.configure({ignoreUnescapedHTML: true});
+    hljs.highlightAll();
+  }
 })();

@@ -2,6 +2,8 @@
 import hljs from 'highlight.js';
 import 'highlight.js/styles/stackoverflow-dark.css';
 
+hljs.configure({ignoreUnescapedHTML: true});
+
 export default {
   name: '_code',
   title: '코드 삽입',

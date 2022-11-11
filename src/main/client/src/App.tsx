@@ -1,5 +1,6 @@
 import { Provider } from 'react-redux';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import './App.css';
 import Home from './components/Home';
 import Sidebar from './components/Sidebar';
 import ManageCategory from "./pages/ManageCategory";

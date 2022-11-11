@@ -68,25 +68,25 @@ const PostChangeOption = (props: {
     <div className="change" ref={ref}>
       <button type="button" disabled={!isActivate} onClick={onToggleOpen}>변경</button>
       <div className="option">
-        <span>공개 여부</span>
+        <span className="option-label">공개 여부</span>
         <ul>
           <li onClick={() => handleChangeVisible(true)}><a href="" onClick={() => handleDummyAClick}>공개</a></li>
           <li onClick={() => handleChangeVisible(false)}><a href="" onClick={() => handleDummyAClick}>비공개</a></li>
         </ul>
-        <span>카테고리</span>
+        <span className="option-label">카테고리</span>
         <ul>
           {
             categoryTree.map(p =>
               <React.Fragment key={p.categoryId}>
               <li onClick={() => handleChangeCategory(p.categoryId, {name: p.name, parent: null})}>
-                <a href="" onClick={() => handleDummyAClick}>{p.name}</a>
+                <a href="" onClick={() => handleDummyAClick} title={p.name}>{p.name}</a>
                 {p.childList.length < 1
                   ? null
                   : <ul>
                     {
                       p.childList.map(c =>
                         <li key={c.categoryId} onClick={() => handleChangeCategory(c.categoryId, {name: c.name, parent: p.name})}>
-                          <a href="" onClick={() => handleDummyAClick}>{c.name}</a>
+                          <a href="" onClick={() => handleDummyAClick} title={c.name}>{c.name}</a>
                         </li>
                       )
                     }

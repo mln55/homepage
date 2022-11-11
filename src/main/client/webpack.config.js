@@ -1,38 +1,43 @@
 // https://webpack.js.org/configuration/#options
-module.exports = {
-  mode: "development",
+module.exports = (env, argv) => {
 
-  entry: "./src/index.tsx",
+  const mode = env.production ? "production" : "development";
 
-  output: {
-    filename: "main.js",
-    path: __dirname + "../../resources/static/admin/js",
-  },
+  return {
+    mode: mode,
 
-  devtool: "source-map",
+    entry: "./src/index.tsx",
 
-  resolve: {
-    extensions: [".ts", ".tsx", ".js"],
-  },
-
-  module: {
-    rules: [
-      { test: /\.tsx?$/, loader: "ts-loader" },
-      { test: /\.css$/, use: ["style-loader", "css-loader"] }
-    ]
-  },
-
-  devServer: {
-    port: 3030,
-    // contentBase: './',
-    // publicPath: '/dist',
-    proxy: {
-      "/api/*": "http://127.0.0.1:8080",
-      "/static/*": {
-        target: "http://127.0.0.1:8080",
-        rewrite: function(path, req) { return path.replace(/\/(.*?)/g, '')}
-      }
+    output: {
+      filename: "main.js",
+      path: __dirname + "../../resources/static/admin/js",
     },
-    historyApiFallback: true
+
+    devtool: mode === "development" ? "inline-source-map" : "cheap-module-source-map",
+
+    resolve: {
+      extensions: [".ts", ".tsx", ".js"],
+    },
+
+    module: {
+      rules: [
+        { test: /\.tsx?$/, loader: "ts-loader" },
+        { test: /\.css$/, use: ["style-loader", "css-loader"] }
+      ]
+    },
+
+    devServer: {
+      port: 3030,
+      // contentBase: './',
+      // publicPath: '/dist',
+      proxy: {
+        "/api/*": "http://127.0.0.1:8080",
+        "/static/*": {
+          target: "http://127.0.0.1:8080",
+          rewrite: function(path, req) { return path.replace(/\/(.*?)/g, '')}
+        }
+      },
+      historyApiFallback: true
+    }
   }
 }

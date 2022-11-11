@@ -21,7 +21,8 @@
   },
   "scripts": {
     "start": "webpack-dev-server",
-    "build": "webpack"
+    "build-dev": "webpack",
+    "build": "webpack --env production"
   },
   "devDependencies": {
     "css-loader": "^6.7.1",

@@ -2,6 +2,7 @@ package com.personalproject.homepage.entity;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
@@ -28,6 +29,7 @@ public class Post extends CommonEntity {
 
     private String content;
 
+    @Column(name = "description")
     private String desc;
 
     private Long hit = 0L;

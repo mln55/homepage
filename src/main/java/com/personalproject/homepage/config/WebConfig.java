@@ -2,6 +2,7 @@ package com.personalproject.homepage.config;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -12,10 +13,14 @@ import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import com.personalproject.homepage.config.web.SimplePageableHandlerMethodArgumentResolver;
+import com.personalproject.homepage.config.web.UploadFilePathResolver;
 import com.personalproject.homepage.config.web.ViewPageModelHandlerInterceptor;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    @Value("${spring.profiles.active}")
+    private String activeProfiles;
 
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
@@ -57,5 +62,10 @@ public class WebConfig implements WebMvcConfigurer {
     @Bean
     public HandlerInterceptor viewPageModelHandlerInterceptor() {
         return new ViewPageModelHandlerInterceptor();
+    }
+
+    @Bean
+    public UploadFilePathResolver uploadFilePathResolver() {
+        return new UploadFilePathResolver(activeProfiles);
     }
 }

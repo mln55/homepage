@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.personalproject.homepage.config.web.UploadFilePathResolver;
 import com.personalproject.homepage.dto.FileResponseDto;
 import com.personalproject.homepage.error.ApiException;
 import com.personalproject.homepage.error.ErrorMessage;
@@ -19,14 +20,15 @@ import com.personalproject.homepage.error.ErrorMessage;
 @Service
 public class FileService {
 
-    private static final String UPLOAD_DIR = System.getProperty("user.dir") + "/src/main/resources/static/uploadfile";
+    private final String uploadPath;
 
     private static final String UPLOAD_RESPONSE_DIR = "/static/uploadfile/";
 
-    public FileService() {
-        if (!Files.exists(Paths.get(UPLOAD_DIR))) {
+    public FileService(UploadFilePathResolver uploadFilePathResolver) {
+        uploadPath = uploadFilePathResolver.getUploadPath();
+        if (!Files.exists(Paths.get(uploadPath))) {
             try {
-                Files.createDirectories(Paths.get(UPLOAD_DIR));
+                Files.createDirectories(Paths.get(uploadPath));
             } catch (IOException ioe) {/** TODO: handle exception */}
         }
     }
@@ -40,10 +42,10 @@ public class FileService {
 
         String exe = contentType.split("/")[1];
         String newName = UUID.randomUUID().toString() + "." + exe;
-        Path path = Paths.get(UPLOAD_DIR, newName);
+        Path path = Paths.get(uploadPath, newName);
         while (Files.exists(path)) {
             newName = UUID.randomUUID().toString() + "." + exe;
-            path = Paths.get(UPLOAD_DIR, newName);
+            path = Paths.get(uploadPath, newName);
         }
 
         try {
@@ -55,7 +57,7 @@ public class FileService {
     public FileResponseDto delete(String fileName) {
         checkArgument(StringUtils.hasText(fileName), "fileName을 입력해주세요.");
         try {
-            Path filePath = Paths.get(UPLOAD_DIR, fileName);
+            Path filePath = Paths.get(uploadPath, fileName);
             Files.delete(filePath);
         } catch (IOException e) {
             throw new ApiException(ErrorMessage.NON_EXISTENT, "파일");

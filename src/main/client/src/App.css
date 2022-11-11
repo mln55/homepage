@@ -1,0 +1,212 @@
+@charset "utf-8";
+@import "https://cdn.jsdelivr.net/npm/suneditor@2.43.14/dist/css/suneditor.min.css";
+
+/* manage-wrapper */
+#manage-wrapper {
+  display: flex;
+}
+
+/* manage-sidebar */
+.manage-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  margin-left: 75px;
+  padding: 20px 20px 0 0;
+}
+
+.manage-sidebar li {
+  height: 30px;
+  margin-bottom: 10px;
+}
+
+.manage-sidebar li:hover {
+  cursor: pointer;
+}
+
+/* 카테고리 관리 페이지 */
+.category-container {
+  flex-grow: 1;
+  max-width: 70%;
+  min-width: 400px;
+}
+
+.category-list {
+  margin-bottom: 5px;
+}
+
+.category-list > .category-item:first-child:after {
+  border-bottom: 2px solid;
+}
+
+.category-list > .category-item::after {
+  border-bottom: 1px solid;
+  content: "";
+  display: block;
+}
+
+.category-list .category-content {
+  height: 38px;
+  display: flex;
+  align-items: center;
+}
+
+.category-list .category-content:hover {
+  cursor: default;
+  color: red;
+  transition: 0.1s;
+}
+
+.category-list .category-content .category-name {
+  flex-shrink: 0;
+}
+
+.category-list .category-content .category-name + em {
+  flex-basis: 100%;
+}
+
+.category-list .subcategory-list .category-item {
+  padding-left: 10px;
+}
+
+.category-list .subcategory-list .category-item::before {
+  float: left;
+  padding: 8px 5px 0 0;
+  content: "\2514";
+}
+
+.category-item-button, .category-list-button {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.category-item-button button, .category-list-button button {
+  margin-left: 1px;
+  width: 80px;
+}
+
+.category-list-button .category-add-btn {
+  width: 161px;
+}
+
+/* 게시글 관리 페이지 */
+.post-container {
+  flex-grow: 1;
+  max-width: 70%;
+  min-width: 400px;
+}
+
+.post-list-button {
+  display: flex;
+  padding-bottom: 5px;
+  margin-bottom: 5px;
+  border-bottom: 1px solid;
+}
+
+.option {
+  display: none;
+  padding: 5px 0 0 10px;
+}
+
+.option a {
+  display: inline-block;
+  width: 200px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.option > ul {
+  margin-top: 0.3rem;
+}
+
+.option .option-label {
+  cursor: default;
+  margin-left: -10px;
+}
+
+.option > ul > li > ul > li {
+  margin-left: 0.3rem;
+}
+
+.option > ul > li > ul > li::before {
+  padding: 8px 5px 0 0;
+  content: "\2514";
+}
+
+.open .option {
+  display: block;
+}
+
+.search .option .on {
+  border-left: solid #007bff;
+  padding-left: 4px;
+  margin-left: -5px;
+}
+
+input[id^=postcheck] {
+  height: 20px;
+  width: 20px;
+}
+
+.post-list-button button {
+  margin-left: 1px;
+  width: 80px;
+}
+
+.post-list-button .new button {
+  width: 100px;
+  margin-left: 200%;
+}
+
+.post-container .post-item {
+  display: flex;
+  height: 38px;
+  align-items: center;
+}
+
+.post-container .post-item .post {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+}
+
+.post-container .post-item .post > div {
+  margin-right: 10px;
+}
+
+.post-container .post-item .post .title {
+  width: 300px;
+  min-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post-container .post-item .post .date {
+  flex-shrink: 0;
+}
+
+.post-container .post-item .post .category {
+  width: 200px;
+  min-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.post-container .post-item .post .visible {
+  flex-shrink: 0;
+  flex-basis: 100%;
+}
+
+.post-container .post-item-button {
+  flex-basis: 10%;
+  display: flex;
+}
+
+.post-container .post-item-button button {
+  margin-left: 1px;
+  width: 80px;
+}

@@ -17,8 +17,11 @@
           <span class="date far fa-calendar">
             <span th:text="${#temporals.format(post.postAt, 'yyyy.MM.dd')}"></span>
           </span>
-          <a th:href="|/category/${post.category.parent}/${post.category.name}|" class="category far fa-bookmark">
-            <span th:text="|${post.category.parent}/${post.category.name}|"></span>
+          <a th:if="${post.category.parent ne null}" th:href="|/category/${post.category.parent}/${post.category.name}|" class="category far fa-bookmark">
+            <span th:title="|${post.category.parent}/${post.category.name}|" th:text="|${post.category.parent}/${post.category.name}|"></span>
+          </a>
+          <a th:if="${post.category.parent eq null}" th:href="|/category/${post.category.name}|" class="category far fa-bookmark">
+            <span th:title="|${post.category.name}|" th:text="|${post.category.name}|"></span>
           </a>
         </div>
       </div>

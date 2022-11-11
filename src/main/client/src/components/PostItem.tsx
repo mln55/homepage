@@ -45,11 +45,11 @@ function Post(props: {
     <li className="post-item" onMouseOver={() => setMouseOver(true)} onMouseOut={() => setMouseOver(false)}>
       <div>
         <input id={`postcheck${post.id}`} checked={checked} type="checkbox" onChange={handleCheckPost}/>
-        <label htmlFor={`postcheck${post.id}`}>
-        {/* {
+        {/* <label htmlFor={`postcheck${post.id}`}>
+        {
           checked ? <MdCheckBox /> : <MdCheckBoxOutlineBlank />
-        } */}
-        </label>
+        }
+        </label> */}
       </div>
       <div className="post">
         <div className="title"><Link target="_blank" title={post.title} to={`/${post.id}`}>{post.title}</Link></div>

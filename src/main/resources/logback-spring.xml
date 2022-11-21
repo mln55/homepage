@@ -1,0 +1,75 @@
+<!-- https://logback.qos.ch/manual/index.html -->
+<configuration scan="true" scanPeriod="30 seconds">
+
+  <!-- spring.profies.active에 따른 변수 설정 -->
+  <springProfile name="prod">
+    <property name="LOG_LEVEL" value="WARN" />
+    <property name="LOG_SUB_DIR" value="prod" />
+  </springProfile>
+  <springProfile name="dev">
+    <property name="LOG_LEVEL" value="INFO" />
+    <property name="LOG_SUB_DIR" value="dev" />
+  </springProfile>
+  <springProfile name="test">
+    <property name="LOG_LEVEL" value="INFO" />
+    <property name="LOG_SUB_DIR" value="test" />
+  </springProfile>
+
+  <!-- 변수 설정 -->
+  <property name="LOG_PATTERN" value="%highlight(%-5level) %cyan(%d{yyyy-MM-dd HH:mm:ss:SSS}) [%thread] [%logger{32}] - %msg%n" />
+  <property name="LOG_PATTERN_FOR_FILE" value="%-5level %d{yyyy-MM-dd HH:mm:ss:SSS} [%thread] [%logger{32}] - %msg%n" />
+  <property name="LOG_PATH" value="./logs" />
+  <property name="LOG_COMMON_PATH" value= "common"/>
+  <property name="LOG_ERROR_PATH" value= "error"/>
+  <property name="LOG_COMMON_FILE_NAME" value="common" />
+  <property name="LOG_ERROR_FILE_NAME" value="err" />
+  <property name="LOG_COMMON_FILE" value="${LOG_PATH}/${LOG_SUB_DIR}/${LOG_COMMON_PATH}/${LOG_COMMON_FILE_NAME}"/>
+  <property name="LOG_ERROR_FILE" value="${LOG_PATH}/${LOG_SUB_DIR}/${LOG_ERROR_PATH}/${LOG_ERROR_FILE_NAME}"/>
+  <property name="CHARSET" value="UTF-8" /> <!-- 한글로 로그를 찍음에 있어 커지는 용량은 감수 해야함 -->
+
+  <!-- 콘솔 appender -->
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>${LOG_PATTERN}</pattern>
+    </encoder>
+  </appender>
+
+  <!-- 설정한 주기와 크기에 따라 파일을 naming한다. -->
+  <appender name="COMMON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <encoder>
+      <charset>${CHARSET}</charset>
+      <pattern>${LOG_PATTERN_FOR_FILE}</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_COMMON_FILE}%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>10MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+  </appender>
+
+  <!-- 에러 로그. 설정한 주기와 크기에 따라 파일을 naming한다. -->
+  <appender name="ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <filter class="ch.qos.logback.classic.filter.LevelFilter">
+      <level>error</level>
+      <onMatch>ACCEPT</onMatch>
+      <onMismatch>DENY</onMismatch>
+    </filter>
+    <encoder>
+      <charset>${CHARSET}</charset>
+      <pattern>${LOG_PATTERN_FOR_FILE}</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${LOG_ERROR_FILE}%d{yyyy-MM-dd}_%i.log</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+        <maxFileSize>10MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+    </rollingPolicy>
+  </appender>
+
+  <root level="${LOG_LEVEL}">
+    <appender-ref ref="STDOUT"/>
+    <appender-ref ref="COMMON"/>
+    <appender-ref ref="ERROR"/>
+  </root>
+</configuration>

@@ -1,0 +1,47 @@
+# https://docs.spring.io/spring-boot/docs/2.5.1/reference/html/application-properties.html#application-properties
+server:
+  # http encoding
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  profiles:
+    active: prod
+
+  mvc:
+    throw-exception-if-no-handler-found: true # mapping에 대한 handler가 없을 때 예외 던짐
+    static-path-pattern: static/**
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+  devtools:
+    livereload:
+      enabled: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 15MB
+
+
+# 배포 시 logback-spring.xml의 scan을 true로 한다.
+# 아래 외부 경로에 해당 xml file을 위치
+# logback 변경 사항 발생 시 application을 재시작 않고 수정 가능하다.
+# logging:
+#   config: [외부 경로]
+
+security:
+  admin:
+    id: admin
+    pw: $2a$10$1w3.64lFbB/fUgrJGJieIesrHp7aeIqs6sJYLCP.SowiEO3LVq6LC # 1234
+    roles: ROLE_USER,ROLE_ADMIN
+  jwt:
+    token:
+      name: token
+      type: JWT
+      secret: UU1xNc9IIbQM1f0CMT3wHgat7rZwyDO1rqcJpxwbctw=
+      issuer: me
+      expiry-seconds: 604_800 # 7d

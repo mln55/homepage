@@ -36,5 +36,11 @@ out/
 ### VS Code ###
 .vscode/
 
-src/**/*.properties
-src/**/*.yml
+# 배포용 yml
+src/**/application-prod.yml
+
+### client ###
+**/src/main/client/node_modules
+
+# 클라이언트 코드 번들 및 소스맵
+src/main/resources/static/admin/js/main.js*

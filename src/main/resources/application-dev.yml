@@ -1,0 +1,34 @@
+# for dev yaml
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    hikari:
+      pool-name: HomepageHikariPool
+      # 개발용 datasource 설정
+      driver-class-name: org.h2.Driver
+      jdbc-url: jdbc:h2:mem:devdb;MODE=MYSQL
+      username: dev
+
+  # h2 db 콘솔
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  # 서버 시작 시 실행할 sql문
+  sql:
+    init:
+      schema-locations: classpath:sql/schema.sql
+      # data-locations: classpath:sql/data.sql
+      mode: always # 외부 db접속 시 embeded가 아닌 always로 설정
+      encoding: utf8
+
+  jpa:
+    database: mysql
+    open-in-view: false
+    generate-ddl: false
+    hibernate:
+      ddl-auto: none

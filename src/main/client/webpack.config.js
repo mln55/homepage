@@ -1,7 +1,10 @@
+const path = require("path");
+
 // https://webpack.js.org/configuration/#options
 module.exports = (env, argv) => {
 
   const mode = env.production ? "production" : "development";
+  const outputPath = path.resolve(__dirname, env.production ? '' : "../resources/static/admin/js");
 
   return {
     mode: mode,
@@ -10,7 +13,7 @@ module.exports = (env, argv) => {
 
     output: {
       filename: "main.js",
-      path: __dirname + "../../resources/static/admin/js",
+      path: outputPath,
     },
 
     devtool: mode === "development" ? "inline-source-map" : "cheap-module-source-map",
